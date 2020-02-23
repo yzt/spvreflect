@@ -1,1 +1,4 @@
-/example/vs/*
+/example/vs/.vs/*
+/example/vs/Debug/*
+/example/vs/Release/*
+/example/vs/x64/*
