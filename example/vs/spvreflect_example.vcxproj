@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\spvreflect.c" />
     <ClCompile Include="..\spvreflect_example.cpp" />
   </ItemGroup>
   <ItemGroup>

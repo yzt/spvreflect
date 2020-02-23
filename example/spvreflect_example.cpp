@@ -250,7 +250,7 @@ unsigned char shader01_frag_spirv [2532] =
 
 int main () {
     void * scratch = ::malloc(65'536);
-    spvrefl_result res = spvrelf_reflect(
+    spvrefl_result_t res = spvrelf_reflect(
         shader00_frag_spirv, sizeof(shader00_frag_spirv),
         scratch, 65'536
     );
