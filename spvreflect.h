@@ -8,13 +8,45 @@
 extern "C" {
 #endif
 
+#if !defined(SPVREFL_OPT_MAX_USED_EXTENSIONS)
+    #define SPVREFL_OPT_MAX_USED_EXTENSIONS                         4
+#endif
+#if !defined(SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT)
+    #define SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT    4
+#endif
+#if !defined(SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS)
+    #define SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS                  4
+#endif
+#if !defined(SPVREFL_OPT_MAX_STRUCT_COUNT)
+    #define SPVREFL_OPT_MAX_STRUCT_COUNT                            16
+#endif
+#if !defined(SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
+    #define SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT                     16
+#endif
+
 typedef enum {
     spvrefl_error_none = 0,
     spvrefl_error_unknown,
     spvrefl_error_bad_params,
     spvrefl_error_bad_input_length,
     spvrefl_error_bad_magic_number,
-} spvrefl_error_code_e;
+    spvrefl_error_insufficient_scratch_mem,
+} spvrefl_error_e;
+
+typedef enum {
+    spvrefl_sourcelang_Unknown     = 0, // NOTE: These values are based on the spec and mustn't change
+    spvrefl_sourcelang_ESSL        = 1,
+    spvrefl_sourcelang_GLSL        = 2,
+    spvrefl_sourcelang_OpenCL_C    = 3,
+    spvrefl_sourcelang_OpenCL_CPP  = 4,
+    spvrefl_sourcelang_HLSL        = 5,
+} spvrefl_sourcelang_e;
+
+typedef enum {
+    spvrefl_idtype_unknown = 0,
+    spvrefl_idtype_source_file_name,
+    spvrefl_idtype_struct,
+} spvrefl_idtype_e;
 
 typedef enum {
     spvrefl_capability_Matrix,
@@ -181,33 +213,91 @@ typedef enum {
 } spvrefl_capability_e;
 
 typedef struct {
+    int count;
+    int needed_count;
+    char const * names [SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT];
+} spvrefl_struct_members_t;
+
+typedef struct {
     uint32_t id;
-} spvcrefl_id_data_t;
+    spvrefl_idtype_e type;
+    char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
+    spvrefl_struct_members_t * struct_members; // NULL for non-structs; otherwise will point into scratch memory passed to spvrefl_reflect()
+} spvrefl_id_data_t;
+
+typedef struct {
+    // NOTE: As of SPIR-V 1.5r2, there are 141 unique capabilities defined,
+    //       so they will fit in 160 bits.
+    uint32_t bits [5];
+} spvrefl_capability_set_t;
+
+typedef struct {
+    int count;
+    int needed_count;
+    char const * names [SPVREFL_OPT_MAX_USED_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
+} spvrefl_extension_set_t;
+
+typedef struct {
+    int count;
+    int needed_count;
+    uint32_t ids [SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT];
+    char const * names [SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT];  // Will point into scratch memory passed to spvrefl_reflect()
+} spvrefl_instruction_set_import_set_t;
+
+typedef struct {
+    int count;
+    int needed_count;
+    char const * names [SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
+} spvrefl_source_extension_set_t;
+
+//typedef struct {
+//    int count;
+//    int needed_count;
+//    spvrefl_struct_t desc [SPVREFL_OPT_MAX_STRUCT_COUNT];
+//} spvrefl_struct_set_t;
 
 typedef struct {
     uint32_t magic_number;
     uint8_t version_major, version_minor;
     uint32_t generator;
     uint32_t id_upper_bound;
-    int instruction_count;
-    uint32_t capability_bits [5];
+    uint32_t instruction_count;
+    spvrefl_capability_set_t capabilities;
+    spvrefl_extension_set_t extensions;
+    spvrefl_instruction_set_import_set_t instruction_sets;
+    //spvrefl_struct_set_t structs;
+    int struct_count;
+    int struct_needed_count;
+
+    int ids_count;
+    spvrefl_id_data_t * ids;    // Points to an array of length "ids_count", inside scratch memory.
+
+    spvrefl_sourcelang_e source_language;
+    uint32_t source_language_version;
+    spvrefl_source_extension_set_t source_extensions;
+    char const * source_file_name;
+    char const * source_text;
 } spvrefl_info_t;
 
 typedef struct {
-    spvrefl_error_code_e error_code;
+    spvrefl_error_e error_code;
     int error_position_byte;
-    spvrefl_info_t * reflection_info;
-    int reflection_info_size;
+    int scratch_memory_used_bytes;
 } spvrefl_result_t;
 
 
 spvrefl_result_t
-spvrelf_reflect (
+spvrefl_reflect (
     void const * input_spirv,
     int input_size_bytes,
+    spvrefl_info_t * out_reflection_info,
     void * scratch_memory,
     int scratch_memory_size_bytes
 );
+
+
+char const *
+spvrefl_get_capability_name (spvrefl_capability_e cap);
 
 #if defined(__cplusplus)
 }

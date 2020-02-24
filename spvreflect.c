@@ -2,15 +2,18 @@
 #include "spvreflect.h"
 
 #include <stdio.h>
-#define DEBUG_PRINT(...)    printf(__VA_ARGS__)
+#define DEBUG_PRINT(...)        printf(__VA_ARGS__)
+#define ERROR_PRINT(...)        printf("[ERROR] " __VA_ARGS__)
+
+#include <assert.h>
+#define SPVREFL_ASSERT(cond)    assert(cond)
 
 typedef struct {
     uint32_t code;
     spvrefl_capability_e enum_bit;
-    spvrefl_capability_e also_declares_enum_bit [2];
-    char const * str;
+    spvrefl_capability_e also_declares_enum_bits [2];
+    char const * name_str;
 } spvrefl_internal_capability_entry_t;
-
 static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_data [] = {
     {   0, spvrefl_capability_Matrix, {-1, -1}, "Matrix"},
     {   1, spvrefl_capability_Shader, {spvrefl_capability_Matrix, -1}, "Shader"},
@@ -85,9 +88,9 @@ static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_dat
     {4427, spvrefl_capability_DrawParameters, {spvrefl_capability_Shader, -1}, "DrawParameters"},
     {4431, spvrefl_capability_SubgroupVoteKHR, {-1, -1}, "SubgroupVoteKHR"},
     {4433, spvrefl_capability_StorageBuffer16BitAccess, {-1, -1}, "StorageBuffer16BitAccess"},
-    //{4433, spvrefl_capability_StorageUniformBufferBlock16, {-1, -1}, "StorageUniformBufferBlock16"},
+  //{4433, spvrefl_capability_StorageUniformBufferBlock16, {-1, -1}, "StorageUniformBufferBlock16"},
     {4434, spvrefl_capability_UniformAndStorageBuffer16BitAccess, {spvrefl_capability_StorageBuffer16BitAccess, -1}, "UniformAndStorageBuffer16BitAccess"},
-    //{4434, spvrefl_capability_StorageUniform16, {spvrefl_capability_StorageBuffer16BitAccess, spvrefl_capability_StorageUniformBufferBlock16}, "StorageUniform16"},
+  //{4434, spvrefl_capability_StorageUniform16, {spvrefl_capability_StorageBuffer16BitAccess, spvrefl_capability_StorageUniformBufferBlock16}, "StorageUniform16"},
     {4435, spvrefl_capability_StoragePushConstant16, {-1, -1}, "StoragePushConstant16"},
     {4436, spvrefl_capability_StorageInputOutput16, {-1, -1}, "StorageInputOutput16"},
     {4437, spvrefl_capability_DeviceGroup, {-1, -1}, "DeviceGroup"},
@@ -113,7 +116,7 @@ static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_dat
     {5249, spvrefl_capability_SampleMaskOverrideCoverageNV, {spvrefl_capability_SampleRateShading, -1}, "SampleMaskOverrideCoverageNV"},
     {5251, spvrefl_capability_GeometryShaderPassthroughNV, {spvrefl_capability_Geometry, -1}, "GeometryShaderPassthroughNV"},
     {5254, spvrefl_capability_ShaderViewportIndexLayerEXT, {spvrefl_capability_MultiViewport, -1}, "ShaderViewportIndexLayerEXT"},
-    //{5254, spvrefl_capability_ShaderViewportIndexLayerNV, {spvrefl_capability_MultiViewport, -1}, "ShaderViewportIndexLayerNV"},
+  //{5254, spvrefl_capability_ShaderViewportIndexLayerNV, {spvrefl_capability_MultiViewport, -1}, "ShaderViewportIndexLayerNV"},
     {5255, spvrefl_capability_ShaderViewportMaskNV, {spvrefl_capability_ShaderViewportIndexLayerEXT, -1}, "ShaderViewportMaskNV"},
     {5259, spvrefl_capability_ShaderStereoViewNV, {spvrefl_capability_ShaderViewportMaskNV, -1}, "ShaderStereoViewNV"},
     {5260, spvrefl_capability_PerViewAttributesNV, {spvrefl_capability_MultiView, -1}, "PerViewAttributesNV"},
@@ -126,36 +129,36 @@ static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_dat
     {5291, spvrefl_capability_ShadingRateNV, {spvrefl_capability_Shader, -1}, "ShadingRateNV"},
     {5297, spvrefl_capability_GroupNonUniformPartitionedNV, {-1, -1}, "GroupNonUniformPartitionedNV"},
     {5301, spvrefl_capability_ShaderNonUniform, {spvrefl_capability_Shader, -1}, "ShaderNonUniform"},
-    //{5301, spvrefl_capability_ShaderNonUniformEXT, {spvrefl_capability_Shader, -1}, "ShaderNonUniformEXT"},
+  //{5301, spvrefl_capability_ShaderNonUniformEXT, {spvrefl_capability_Shader, -1}, "ShaderNonUniformEXT"},
     {5302, spvrefl_capability_RuntimeDescriptorArray, {spvrefl_capability_Shader, -1}, "RuntimeDescriptorArray"},
-    //{5302, spvrefl_capability_RuntimeDescriptorArrayEXT, {spvrefl_capability_Shader, -1}, "RuntimeDescriptorArrayEXT"},
+  //{5302, spvrefl_capability_RuntimeDescriptorArrayEXT, {spvrefl_capability_Shader, -1}, "RuntimeDescriptorArrayEXT"},
     {5303, spvrefl_capability_InputAttachmentArrayDynamicIndexing, {spvrefl_capability_InputAttachment, -1}, "InputAttachmentArrayDynamicIndexing"},
-    //{5303, spvrefl_capability_InputAttachmentArrayDynamicIndexingEXT, {spvrefl_capability_InputAttachment, -1}, "InputAttachmentArrayDynamicIndexingEXT"},
+  //{5303, spvrefl_capability_InputAttachmentArrayDynamicIndexingEXT, {spvrefl_capability_InputAttachment, -1}, "InputAttachmentArrayDynamicIndexingEXT"},
     {5304, spvrefl_capability_UniformTexelBufferArrayDynamicIndexing, {spvrefl_capability_SampledBuffer, -1}, "UniformTexelBufferArrayDynamicIndexing"},
-    //{5304, spvrefl_capability_UniformTexelBufferArrayDynamicIndexingEXT, {spvrefl_capability_SampledBuffer, -1}, "UniformTexelBufferArrayDynamicIndexingEXT"},
+  //{5304, spvrefl_capability_UniformTexelBufferArrayDynamicIndexingEXT, {spvrefl_capability_SampledBuffer, -1}, "UniformTexelBufferArrayDynamicIndexingEXT"},
     {5305, spvrefl_capability_StorageTexelBufferArrayDynamicIndexing, {spvrefl_capability_ImageBuffer, -1}, "StorageTexelBufferArrayDynamicIndexing"},
-    //{5305, spvrefl_capability_StorageTexelBufferArrayDynamicIndexingEXT, {spvrefl_capability_ImageBuffer, -1}, "StorageTexelBufferArrayDynamicIndexingEXT"},
+  //{5305, spvrefl_capability_StorageTexelBufferArrayDynamicIndexingEXT, {spvrefl_capability_ImageBuffer, -1}, "StorageTexelBufferArrayDynamicIndexingEXT"},
     {5306, spvrefl_capability_UniformBufferArrayNonUniformIndexing, {spvrefl_capability_ShaderNonUniform, -1}, "UniformBufferArrayNonUniformIndexing"},
-    //{5306, spvrefl_capability_UniformBufferArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "UniformBufferArrayNonUniformIndexingEXT"},
+  //{5306, spvrefl_capability_UniformBufferArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "UniformBufferArrayNonUniformIndexingEXT"},
     {5307, spvrefl_capability_SampledImageArrayNonUniformIndexing, {spvrefl_capability_ShaderNonUniform, -1}, "SampledImageArrayNonUniformIndexing"},
-    //{5307, spvrefl_capability_SampledImageArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "SampledImageArrayNonUniformIndexingEXT"},
+  //{5307, spvrefl_capability_SampledImageArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "SampledImageArrayNonUniformIndexingEXT"},
     {5308, spvrefl_capability_StorageBufferArrayNonUniformIndexing, {spvrefl_capability_ShaderNonUniform, -1}, "StorageBufferArrayNonUniformIndexing"},
-    //{5308, spvrefl_capability_StorageBufferArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "StorageBufferArrayNonUniformIndexingEXT"},
+  //{5308, spvrefl_capability_StorageBufferArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "StorageBufferArrayNonUniformIndexingEXT"},
     {5309, spvrefl_capability_StorageImageArrayNonUniformIndexing, {spvrefl_capability_ShaderNonUniform, -1}, "StorageImageArrayNonUniformIndexing"},
-    //{5309, spvrefl_capability_StorageImageArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "StorageImageArrayNonUniformIndexingEXT"},
+  //{5309, spvrefl_capability_StorageImageArrayNonUniformIndexingEXT, {spvrefl_capability_ShaderNonUniform, -1}, "StorageImageArrayNonUniformIndexingEXT"},
     {5310, spvrefl_capability_InputAttachmentArrayNonUniformIndexing, {spvrefl_capability_InputAttachment, spvrefl_capability_ShaderNonUniform}, "InputAttachmentArrayNonUniformIndexing"},
-    //{5310, spvrefl_capability_InputAttachmentArrayNonUniformIndexingEXT, {spvrefl_capability_InputAttachment, spvrefl_capability_ShaderNonUniform}, "InputAttachmentArrayNonUniformIndexingEXT"},
+  //{5310, spvrefl_capability_InputAttachmentArrayNonUniformIndexingEXT, {spvrefl_capability_InputAttachment, spvrefl_capability_ShaderNonUniform}, "InputAttachmentArrayNonUniformIndexingEXT"},
     {5311, spvrefl_capability_UniformTexelBufferArrayNonUniformIndexing, {spvrefl_capability_SampledBuffer, spvrefl_capability_ShaderNonUniform}, "UniformTexelBufferArrayNonUniformIndexing"},
-    //{5311, spvrefl_capability_UniformTexelBufferArrayNonUniformIndexingEXT, {spvrefl_capability_SampledBuffer, spvrefl_capability_ShaderNonUniform}, "UniformTexelBufferArrayNonUniformIndexingEXT"},
+  //{5311, spvrefl_capability_UniformTexelBufferArrayNonUniformIndexingEXT, {spvrefl_capability_SampledBuffer, spvrefl_capability_ShaderNonUniform}, "UniformTexelBufferArrayNonUniformIndexingEXT"},
     {5312, spvrefl_capability_StorageTexelBufferArrayNonUniformIndexing, {spvrefl_capability_ImageBuffer, spvrefl_capability_ShaderNonUniform}, "StorageTexelBufferArrayNonUniformIndexing"},
-    //{5312, spvrefl_capability_StorageTexelBufferArrayNonUniformIndexingEXT, {spvrefl_capability_ImageBuffer, spvrefl_capability_ShaderNonUniform}, "StorageTexelBufferArrayNonUniformIndexingEXT"},
+  //{5312, spvrefl_capability_StorageTexelBufferArrayNonUniformIndexingEXT, {spvrefl_capability_ImageBuffer, spvrefl_capability_ShaderNonUniform}, "StorageTexelBufferArrayNonUniformIndexingEXT"},
     {5340, spvrefl_capability_RayTracingNV, {spvrefl_capability_Shader, -1}, "RayTracingNV"},
     {5345, spvrefl_capability_VulkanMemoryModel, {-1, -1}, "VulkanMemoryModel"},
-    //{5345, spvrefl_capability_VulkanMemoryModelKHR, {-1, -1}, "VulkanMemoryModelKHR"},
+  //{5345, spvrefl_capability_VulkanMemoryModelKHR, {-1, -1}, "VulkanMemoryModelKHR"},
     {5346, spvrefl_capability_VulkanMemoryModelDeviceScope, {-1, -1}, "VulkanMemoryModelDeviceScope"},
-    //{5346, spvrefl_capability_VulkanMemoryModelDeviceScopeKHR, {-1, -1}, "VulkanMemoryModelDeviceScopeKHR"},
+  //{5346, spvrefl_capability_VulkanMemoryModelDeviceScopeKHR, {-1, -1}, "VulkanMemoryModelDeviceScopeKHR"},
     {5347, spvrefl_capability_PhysicalStorageBufferAddresses, {spvrefl_capability_Shader, -1}, "PhysicalStorageBufferAddresses"},
-    //{5347, spvrefl_capability_PhysicalStorageBufferAddressesEXT, {spvrefl_capability_Shader, -1}, "PhysicalStorageBufferAddressesEXT"},
+  //{5347, spvrefl_capability_PhysicalStorageBufferAddressesEXT, {spvrefl_capability_Shader, -1}, "PhysicalStorageBufferAddressesEXT"},
     {5350, spvrefl_capability_ComputeDerivativeGroupLinearNV, {-1, -1}, "ComputeDerivativeGroupLinearNV"},
     {5357, spvrefl_capability_CooperativeMatrixNV, {spvrefl_capability_Shader, -1}, "CooperativeMatrixNV"},
     {5363, spvrefl_capability_FragmentShaderSampleInterlockEXT, {spvrefl_capability_Shader, -1}, "FragmentShaderSampleInterlockEXT"},
@@ -171,7 +174,10 @@ static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_dat
     {5696, spvrefl_capability_SubgroupAvcMotionEstimationINTEL, {-1, -1}, "SubgroupAvcMotionEstimationINTEL"},
     {5697, spvrefl_capability_SubgroupAvcMotionEstimationIntraINTEL, {-1, -1}, "SubgroupAvcMotionEstimationIntraINTEL"},
     {5698, spvrefl_capability_SubgroupAvcMotionEstimationChromaINTEL, {-1, -1}, "SubgroupAvcMotionEstimationChromaINTEL"},
+
+  //{  -1, -1, {-1, -1}, NULL}, // Keep this at the end
 };
+static int const spvrefl_internal_capability_data_count = sizeof(spvrefl_internal_capability_data) / sizeof(spvrefl_internal_capability_data[0]);
 
 typedef struct {
     uint32_t const * ptr_begin;
@@ -189,12 +195,10 @@ spvrefl_internal_input_init (spvrefl_internal_input_t * input, void const * data
     input->ptr_end = input->ptr_begin + size_in_words;
     input->ptr_cur = input->ptr_begin;
 }
-
 static bool
 spvrefl_internal_input_ended (spvrefl_internal_input_t const * input) {
     return !input || !input->ptr_cur || input->ptr_cur >= input->ptr_end;
 }
-
 static uint32_t
 spvrefl_internal_input_advance_data (spvrefl_internal_input_t * input) {
     if (input->ptr_cur < input->ptr_end)
@@ -203,7 +207,6 @@ spvrefl_internal_input_advance_data (spvrefl_internal_input_t * input) {
         input->cur_word = 0;
     return input->cur_word;
 }
-
 static void
 spvrefl_internal_input_advance_instruction (spvrefl_internal_input_t * input) {
     spvrefl_internal_input_advance_data(input);
@@ -211,20 +214,111 @@ spvrefl_internal_input_advance_instruction (spvrefl_internal_input_t * input) {
     input->inst_opcode = (uint16_t)(input->cur_word & 0xFFFF);
 }
 
+typedef struct {
+    char * begin;
+    char * end;
+    char * cur;
+} spvrefl_internal_stringtab_t;
+
+static char *
+spvrefl_internal_stringtab_push (spvrefl_internal_stringtab_t * strtab, spvrefl_internal_input_t * input, uint16_t expected_words, unsigned * out_used_words) {
+    char * ret = strtab->cur;
+    unsigned used_words = 0;
+    bool ended = false;
+    while (!ended && strtab->cur < strtab->end) {
+        uint32_t w = spvrefl_internal_input_advance_data(input);
+        used_words += 1;
+        for (int i = 0; i < 4 && !ended; ++i) {
+            char c = w & 0xFF;
+            w >>= 8;
+            *strtab->cur++ = c;
+            ended = ('\0' == c);
+        }
+    }
+    if (expected_words >= 0 && expected_words != used_words) {
+        ERROR_PRINT("[SPVREFL INTERNAL ERROR] Expected %u words in the literal string '%s', but found %u.\n", expected_words, ret, used_words);
+    }
+    if (out_used_words)
+        *out_used_words = used_words;
+    return ret;
+}
+
+static void
+spvrefl_internal_validate_capability_data () {
+    //DEBUG_PRINT("[INTERNAL] Capbilities enum has %u struct_members.\n", spvrefl_capability__count);
+    //DEBUG_PRINT("[INTERNAL] Capbilities table has %u entries.\n", spvrefl_internal_capability_data_count);
+    if (spvrefl_capability__count != spvrefl_internal_capability_data_count)
+        ERROR_PRINT("[INTERNAL ERROR] Capabilities enum and its corresponding table don't match in size.\n");
+    for (int i = 0; i < spvrefl_internal_capability_data_count; ++i) {
+        if (i != spvrefl_internal_capability_data[i].enum_bit)
+            ERROR_PRINT("[INTERNAL ERROR] Capability entry #%u doesn't match its enum bit #%d.\n", i, spvrefl_internal_capability_data[i].enum_bit);
+    }
+}
+static void
+spvrefl_internal_capability_add_simple (spvrefl_capability_set_t * capability_set, spvrefl_capability_e new_capability) {
+    capability_set->bits[new_capability / 32] |= 1U << (new_capability % 32);
+}
+static void
+spvrefl_internal_capability_add_with_requisites (spvrefl_capability_set_t * capability_set, spvrefl_capability_e new_capability) {
+    spvrefl_internal_capability_add_simple(capability_set, new_capability);
+    for (int i = 0; i < 2; ++i) {
+        int additional = spvrefl_internal_capability_data[new_capability].also_declares_enum_bits[i];
+        if (additional != -1)
+            spvrefl_internal_capability_add_with_requisites(capability_set, additional);
+    }
+}
+static void
+spvrefl_internal_capability_find_and_add_with_requisites (spvrefl_capability_set_t * capability_set, uint32_t new_capability_code) {
+    int i = 0;
+    for (; i < spvrefl_internal_capability_data_count; ++i)
+        if (spvrefl_internal_capability_data[i].code == new_capability_code)
+            break;
+    if (i < spvrefl_internal_capability_data_count) {
+        spvrefl_internal_capability_add_with_requisites(capability_set, spvrefl_internal_capability_data[i].enum_bit);
+    } else {
+        ERROR_PRINT("[SPVREFL INTERNAL ERROR] Couldn't find capability #%u in internal data tables.\n", new_capability_code);
+    }
+}
+
+static spvrefl_struct_members_t *
+spvrefl_internal_alloc_struct_for_id (spvrefl_info_t * info, uint32_t struct_id, spvrefl_struct_members_t * structs) {
+    if (NULL == info->ids[struct_id].struct_members) {
+        SPVREFL_ASSERT(spvrefl_idtype_struct == info->ids[struct_id].type || spvrefl_idtype_unknown == info->ids[struct_id].type);
+        if (spvrefl_idtype_unknown == info->ids[struct_id].type) {
+            info->ids[struct_id].type = spvrefl_idtype_struct;
+            info->struct_needed_count += 1;
+            if (info->struct_count < SPVREFL_OPT_MAX_STRUCT_COUNT) {
+                info->ids[struct_id].struct_members = structs + info->struct_count;
+                info->struct_count += 1;
+            }
+        }
+    }
+    return info->ids[struct_id].struct_members;
+}
+
+char const *
+spvrefl_get_capability_name (spvrefl_capability_e cap) {
+    if (cap >= 0 && cap < spvrefl_internal_capability_data_count)
+        return spvrefl_internal_capability_data[cap].name_str;
+    else
+        return NULL;
+}
+
 spvrefl_result_t
-spvrelf_reflect (
+spvrefl_reflect (
     void const * input_spirv,
     int input_size_bytes,
+    spvrefl_info_t * out_reflection_info,
     void * scratch_memory,
     int scratch_memory_size_bytes
 ) {
     spvrefl_result_t ret = {0};
-    uint8_t * scratch = (uint8_t *)scratch_memory;
-    int scratch_left = scratch_memory_size_bytes;
 
-    //ret.error_code = spvrefl_error_unknown;
+    /* Validate some internal stuff... */
+    //spvrefl_internal_validate_capability_data();
 
-    if (!input_spirv || input_size_bytes <= 0) {
+    /* Check parameter errors... */
+    if (!input_spirv || input_size_bytes <= 0 || !out_reflection_info) {
         ret.error_code = spvrefl_error_bad_params;
         return ret;
     }
@@ -232,55 +326,163 @@ spvrelf_reflect (
         ret.error_code = spvrefl_error_bad_input_length;
         return ret;
     }
-//        (!scratch_memory || scratch_memory_size_bytes > 0
+
+    /* Zero-out output reflection info... */
+    spvrefl_info_t * info = out_reflection_info;
+    for (unsigned i = 0; i < sizeof(*info); ++i)
+        *((char *)info + i) = 0;
+
+    /* Setup use of input... */
     spvrefl_internal_input_t input_storage;
     spvrefl_internal_input_t * input = &input_storage;
     spvrefl_internal_input_init(input, input_spirv, input_size_bytes / 4);
 
-    uint32_t magic_number = spvrefl_internal_input_advance_data(input);
-    if (magic_number != 0x07230203) {
+    /* Read header... */
+    info->magic_number = spvrefl_internal_input_advance_data(input);
+    if (info->magic_number != 0x07230203) {
         ret.error_code = spvrefl_error_bad_magic_number;
         return ret;
     }
-    uint32_t version = spvrefl_internal_input_advance_data(input);
-    uint32_t generator = spvrefl_internal_input_advance_data(input);
-    uint32_t bound = spvrefl_internal_input_advance_data(input);
-    /*uint32_t reserved =*/ spvrefl_internal_input_advance_data(input);
+    spvrefl_internal_input_advance_data(input);
+    info->version_major = (input->cur_word >> 16) & 0xFF;
+    info->version_minor = (input->cur_word >>  8) & 0xFF;
+    info->generator = spvrefl_internal_input_advance_data(input);
+    info->id_upper_bound = spvrefl_internal_input_advance_data(input);
+    spvrefl_internal_input_advance_data(input);
 
-    int instruction_count = 0;
+    /* Setup use of scratch memory (id table and string table) */
+    if (!scratch_memory || scratch_memory_size_bytes < info->id_upper_bound * sizeof(spvrefl_id_data_t)) {
+        ret.error_code = spvrefl_error_insufficient_scratch_mem;
+        return ret;
+    }
+    char * scratch = (char *)scratch_memory;
+    int scratch_left = scratch_memory_size_bytes;
+
+    info->ids_count = (int)info->id_upper_bound;
+    info->ids = (spvrefl_id_data_t *)scratch;
+    scratch += info->id_upper_bound * sizeof(spvrefl_id_data_t);
+    scratch_left -= info->id_upper_bound * sizeof(spvrefl_id_data_t);
+    for (int i = 0; i < info->ids_count; ++i) {
+        info->ids[i].id = ~0U;
+        info->ids[i].name = NULL;
+    }
+
+    // Struct table:
+    spvrefl_struct_members_t * structtab = (spvrefl_struct_members_t *)scratch;
+    scratch += SPVREFL_OPT_MAX_STRUCT_COUNT * sizeof(spvrefl_struct_members_t);
+    scratch_left -= SPVREFL_OPT_MAX_STRUCT_COUNT * sizeof(spvrefl_struct_members_t);
+    for (int i = 0; i < SPVREFL_OPT_MAX_STRUCT_COUNT; ++i) {
+        structtab[i].count = 0;
+        structtab[i].needed_count = 0;
+        for (int j = 0; j < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT; ++j)
+            structtab[i].names[j] = NULL;
+    }
+
+    // String table must be the last thing in scratch memory, because it has variable length.
+    spvrefl_internal_stringtab_t strtab_storage = {0};
+    spvrefl_internal_stringtab_t * strtab = &strtab_storage;
+    if (scratch_left > 0) {
+        strtab->begin = scratch;
+        strtab->end = strtab->begin + scratch_left - 1;  // Reserve 1 byte for a sentinel NUL at the end
+        strtab->cur = strtab->begin;
+        *strtab->end = '\0';
+    }
+
+    /* Special IDs to be filled later... */
+    uint32_t id_of_source_file_name_string = ~0U;
+
+    /* Read the instructions... */
     while (!spvrefl_internal_input_ended(input)) {
         spvrefl_internal_input_advance_instruction(input);
-        instruction_count += 1;
-        DEBUG_PRINT("- %hu, 0x%04hX\n", input->inst_word_count, input->inst_opcode);
+        info->instruction_count += 1;
+        
+        uint16_t const word_count = input->inst_word_count;
+        uint16_t const opcode = input->inst_opcode;
 
-        switch (input->inst_opcode) {
-        case 17: {                      // OpCapability
+        switch (opcode) {
+        case 17: {  // OpCapability
+            SPVREFL_ASSERT(2 == word_count);
             spvrefl_internal_input_advance_data(input);
-            //uint32_t cap = input->cur_word;
+            spvrefl_internal_capability_find_and_add_with_requisites(&info->capabilities, input->cur_word);
+        } break;
+        case 10: {  // OpExtension
+            SPVREFL_ASSERT(2 <= word_count);
+            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
+            info->extensions.needed_count += 1;
+            if (info->extensions.count < SPVREFL_OPT_MAX_USED_EXTENSIONS)
+                info->extensions.names[info->extensions.count++] = str;
+        } break;
+        case 11: {  // OpExtInstImport
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t id = spvrefl_internal_input_advance_data(input);
+            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            info->instruction_sets.needed_count += 1;
+            if (info->instruction_sets.count < SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT) {
+                info->instruction_sets.ids[info->instruction_sets.count] = id;
+                info->instruction_sets.names[info->instruction_sets.count] = str;
+                info->instruction_sets.count += 1;
+            }
+        } break;
+        case 12: {  // OpExtInst
+            SPVREFL_ASSERT(5 <= word_count);
+            DEBUG_PRINT("- (@%u) OpExtInst (%u words)\n", info->instruction_count, input->inst_word_count);
+            for (unsigned i = 1; i < input->inst_word_count; ++i)
+                spvrefl_internal_input_advance_data(input);
+        } break;
+        case 2: {   // OpSourceContinued
+            SPVREFL_ASSERT(2 <= word_count);
+            DEBUG_PRINT("- (@%u) OpSourceContinued (%u words)\n", info->instruction_count, input->inst_word_count);
+            for (unsigned i = 1; i < input->inst_word_count; ++i)
+                spvrefl_internal_input_advance_data(input);
+        } break;
+        case 3: {  // OpSource
+            SPVREFL_ASSERT(3 <= word_count);
+            info->source_language = spvrefl_internal_input_advance_data(input);
+            info->source_language_version = spvrefl_internal_input_advance_data(input);
+            if (word_count > 3)
+                id_of_source_file_name_string = spvrefl_internal_input_advance_data(input);
+            if (word_count > 4)
+                info->source_text = spvrefl_internal_stringtab_push(strtab, input, word_count - 4, NULL);
+        } break;
+        case 4: {  // OpSourceExtension
+            SPVREFL_ASSERT(2 <= word_count);
+            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
+            info->source_extensions.needed_count += 1;
+            if (info->source_extensions.count < SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS)
+                info->source_extensions.names[info->source_extensions.count++] = str;
+        } break;
+        case 5: {   // OpName
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t id = spvrefl_internal_input_advance_data(input);
+            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            SPVREFL_ASSERT(id < info->id_upper_bound);
+            info->ids[id].id = id;
+            info->ids[id].name = str;
+        } break;
+        case 6: {   // OpMemberName
+            SPVREFL_ASSERT(4 <= word_count);
+            uint32_t id = spvrefl_internal_input_advance_data(input);
+            int member_no = (int)spvrefl_internal_input_advance_data(input);
+            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            SPVREFL_ASSERT(id < info->id_upper_bound);
+            spvrefl_struct_members_t * struct_ptr = spvrefl_internal_alloc_struct_for_id(info, id, structtab);
+            if (member_no >= struct_ptr->needed_count)
+                struct_ptr->needed_count = member_no + 1;
+            if (member_no >= struct_ptr->count && member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
+                struct_ptr->count = member_no + 1;
+            if (member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
+                struct_ptr->names[member_no] = str;
         } break;
         default: {
-            for (unsigned i = 1; i < input->inst_word_count; ++i)
+            //DEBUG_PRINT("[%hu, 0x%04hX] ", input->inst_word_count, input->inst_opcode);
+            for (unsigned i = 1; i < word_count; ++i)
                 spvrefl_internal_input_advance_data(input);
         } break;
         }
     }
+    //DEBUG_PRINT("\n");
 
-    if (scratch && scratch_left >= sizeof(spvrefl_info_t)) {
-        spvrefl_info_t * info = (spvrefl_info_t *)scratch;
-        scratch += sizeof(*info);
-        scratch_left -= sizeof(*info);
-
-        info->magic_number = magic_number;
-        info->version_major = (version >> 16) & 0xFF;
-        info->version_minor = (version >>  8) & 0xFF;
-        info->generator = generator;
-        info->id_upper_bound = bound;
-        info->instruction_count = instruction_count;
-
-        ret.reflection_info = info;
-        ret.reflection_info_size = scratch_memory_size_bytes - scratch_left;
-    }
-
+    ret.scratch_memory_used_bytes = (int)(strtab->cur - (char *)scratch_memory);
     return ret;
 }
 
