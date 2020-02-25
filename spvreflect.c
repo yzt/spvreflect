@@ -174,10 +174,73 @@ static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_dat
     {5696, spvrefl_capability_SubgroupAvcMotionEstimationINTEL, {-1, -1}, "SubgroupAvcMotionEstimationINTEL"},
     {5697, spvrefl_capability_SubgroupAvcMotionEstimationIntraINTEL, {-1, -1}, "SubgroupAvcMotionEstimationIntraINTEL"},
     {5698, spvrefl_capability_SubgroupAvcMotionEstimationChromaINTEL, {-1, -1}, "SubgroupAvcMotionEstimationChromaINTEL"},
-
-  //{  -1, -1, {-1, -1}, NULL}, // Keep this at the end
 };
 static int const spvrefl_internal_capability_data_count = sizeof(spvrefl_internal_capability_data) / sizeof(spvrefl_internal_capability_data[0]);
+
+typedef struct {
+    uint32_t code;
+    spvrefl_capability_e enum_bit;
+    int param_count;    // 0, 1, or 3
+    char const * name_str;
+} spvrefl_internal_execmode_entry_t;
+static spvrefl_internal_execmode_entry_t const spvrefl_internal_execmode_data [] = {
+    {   0, spvrefl_execmode_Invocations, 1, "Invocations"},
+    {   1, spvrefl_execmode_SpacingEqual, 0, "SpacingEqual"},
+    {   2, spvrefl_execmode_SpacingFractionalEven, 0, "SpacingFractionalEven"},
+    {   3, spvrefl_execmode_SpacingFractionalOdd, 0, "SpacingFractionalOdd"},
+    {   4, spvrefl_execmode_VertexOrderCw, 0, "VertexOrderCw"},
+    {   5, spvrefl_execmode_VertexOrderCcw, 0, "VertexOrderCcw"},
+    {   6, spvrefl_execmode_PixelCenterInteger, 0, "PixelCenterInteger"},
+    {   7, spvrefl_execmode_OriginUpperLeft, 0, "OriginUpperLeft"},
+    {   8, spvrefl_execmode_OriginLowerLeft, 0, "OriginLowerLeft"},
+    {   9, spvrefl_execmode_EarlyFragmentTests, 0, "EarlyFragmentTests"},
+    {  10, spvrefl_execmode_PointMode, 0, "PointMode"},
+    {  11, spvrefl_execmode_Xfb, 0, "Xfb"},
+    {  12, spvrefl_execmode_DepthReplacing, 0, "DepthReplacing"},
+    {  14, spvrefl_execmode_DepthGreater, 0, "DepthGreater"},
+    {  15, spvrefl_execmode_DepthLess, 0, "DepthLess"},
+    {  16, spvrefl_execmode_DepthUnchanged, 0, "DepthUnchanged"},
+    {  17, spvrefl_execmode_LocalSize, 3, "LocalSize"},
+    {  18, spvrefl_execmode_LocalSizeHint, 3	, "LocalSizeHint"},
+    {  19, spvrefl_execmode_InputPoints, 0, "InputPoints"},
+    {  20, spvrefl_execmode_InputLines, 0, "InputLines"},
+    {  21, spvrefl_execmode_InputLinesAdjacency, 0, "InputLinesAdjacency"},
+    {  22, spvrefl_execmode_Triangles, 0, "Triangles"},
+    {  23, spvrefl_execmode_InputTrianglesAdjacency, 0, "InputTrianglesAdjacency"},
+    {  24, spvrefl_execmode_Quads, 0, "Quads"},
+    {  25, spvrefl_execmode_Isolines, 0, "Isolines"},
+    {  26, spvrefl_execmode_OutputVertices, 1, "OutputVertices"},
+    {  27, spvrefl_execmode_OutputPoints, 0, "OutputPoints"},
+    {  28, spvrefl_execmode_OutputLineStrip, 0, "OutputLineStrip"},
+    {  29, spvrefl_execmode_OutputTriangleStrip, 0, "OutputTriangleStrip"},
+    {  30, spvrefl_execmode_VecTypeHint, 1, "VecTypeHint"},
+    {  31, spvrefl_execmode_ContractionOff, 0, "ContractionOff"},
+    {  33, spvrefl_execmode_Initializer, 0, "Initializer"},
+    {  34, spvrefl_execmode_Finalizer, 0, "Finalizer"},
+    {  35, spvrefl_execmode_SubgroupSize, 1, "SubgroupSize"},
+    {  36, spvrefl_execmode_SubgroupsPerWorkgroup, 1, "SubgroupsPerWorkgroup"},
+    {  37, spvrefl_execmode_SubgroupsPerWorkgroupId, 1, "SubgroupsPerWorkgroupId"},
+    {  38, spvrefl_execmode_LocalSizeId, 3, "LocalSizeId"},
+    {  39, spvrefl_execmode_LocalSizeHintId, 3, "LocalSizeHintId"},
+    {4446, spvrefl_execmode_PostDepthCoverage, 0, "PostDepthCoverage"},
+    {4459, spvrefl_execmode_DenormPreserve, 1, "DenormPreserve"},
+    {4460, spvrefl_execmode_DenormFlushToZero, 1, "DenormFlushToZero"},
+    {4461, spvrefl_execmode_SignedZeroInfNanPreserve, 1, "SignedZeroInfNanPreserve"},
+    {4462, spvrefl_execmode_RoundingModeRTE, 1, "RoundingModeRTE"},
+    {4463, spvrefl_execmode_RoundingModeRTZ, 1, "RoundingModeRTZ"},
+    {5027, spvrefl_execmode_StencilRefReplacingEXT, 0, "StencilRefReplacingEXT"},
+    {5269, spvrefl_execmode_OutputLinesNV, 0, "OutputLinesNV"},
+    {5270, spvrefl_execmode_OutputPrimitivesNV, 1, "OutputPrimitivesNV"},
+    {5289, spvrefl_execmode_DerivativeGroupQuadsNV, 0, "DerivativeGroupQuadsNV"},
+    {5290, spvrefl_execmode_DerivativeGroupLinearNV, 0, "DerivativeGroupLinearNV"},
+    {5298, spvrefl_execmode_OutputTrianglesNV, 0, "OutputTrianglesNV"},
+    {5366, spvrefl_execmode_PixelInterlockOrderedEXT, 0, "PixelInterlockOrderedEXT"},
+    {5367, spvrefl_execmode_PixelInterlockUnorderedEXT, 0, "PixelInterlockUnorderedEXT"},
+    {5368, spvrefl_execmode_SampleInterlockOrderedEXT, 0, "SampleInterlockOrderedEXT"},
+    {5369, spvrefl_execmode_SampleInterlockUnorderedEXT, 0, "SampleInterlockUnorderedEXT"},
+    {5370, spvrefl_execmode_ShadingRateInterlockOrderedEXT, 0, "ShadingRateInterlockOrderedEXT"},
+    {5371, spvrefl_execmode_ShadingRateInterlockUnorderedEXT, 0, "ShadingRateInterlockUnorderedEXT"},
+};
 
 typedef struct {
     uint32_t const * ptr_begin;
@@ -351,7 +414,7 @@ spvrefl_reflect (
     spvrefl_internal_input_advance_data(input);
 
     /* Setup use of scratch memory (id table and string table) */
-    if (!scratch_memory || scratch_memory_size_bytes < info->id_upper_bound * sizeof(spvrefl_id_data_t)) {
+    if (!scratch_memory || scratch_memory_size_bytes < (int)(info->id_upper_bound * sizeof(spvrefl_id_data_t))) {
         ret.error_code = spvrefl_error_insufficient_scratch_mem;
         return ret;
     }

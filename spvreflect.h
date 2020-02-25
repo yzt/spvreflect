@@ -34,19 +34,110 @@ typedef enum {
 } spvrefl_error_e;
 
 typedef enum {
-    spvrefl_sourcelang_Unknown     = 0, // NOTE: These values are based on the spec and mustn't change
-    spvrefl_sourcelang_ESSL        = 1,
-    spvrefl_sourcelang_GLSL        = 2,
-    spvrefl_sourcelang_OpenCL_C    = 3,
-    spvrefl_sourcelang_OpenCL_CPP  = 4,
-    spvrefl_sourcelang_HLSL        = 5,
+    spvrefl_sourcelang_Unknown      = 0, // NOTE: These values are based on the spec and mustn't change
+    spvrefl_sourcelang_ESSL         = 1,
+    spvrefl_sourcelang_GLSL         = 2,
+    spvrefl_sourcelang_OpenCL_C     = 3,
+    spvrefl_sourcelang_OpenCL_CPP   = 4,
+    spvrefl_sourcelang_HLSL         = 5,
 } spvrefl_sourcelang_e;
+
+typedef enum {
+    spvrefl_executionmodel_vertex        = 0,
+    spvrefl_executionmodel_tess_control  = 1,
+    spvrefl_executionmodel_tess_eval     = 2,
+    spvrefl_executionmodel_geometry      = 3,
+    spvrefl_executionmodel_fragment      = 4,
+    spvrefl_executionmodel_glcompute     = 5,
+    spvrefl_executionmodel_kernel        = 6,
+    spvrefl_executionmodel_task_nv       = 5267,
+    spvrefl_executionmodel_mesh_nv       = 5268,
+    spvrefl_executionmodel_ray_gen_nv    = 5313,
+    spvrefl_executionmodel_intersect_nv  = 5314,
+    spvrefl_executionmodel_anyhit_nv     = 5315,
+    spvrefl_executionmodel_closesthit_nv = 5316,
+    spvrefl_executionmodel_miss_nv       = 5317,
+    spvrefl_executionmodel_callable_nv   = 5318,
+} spvrefl_executionmodel_e;
+
+typedef enum {
+    spvrefl_addressingmodel_logical                 = 0,
+    spvrefl_addressingmodel_physical32              = 1,
+    spvrefl_addressingmodel_physical64              = 2,
+    spvrefl_addressingmodel_physicalstoragebuffer64 = 5348,
+} spvrefl_addressingmodel_e;
+
+typedef enum {
+    spvrefl_memorymodel_simple      = 0,
+    spvrefl_memorymodel_glsl450     = 1,
+    spvrefl_memorymodel_opencl      = 2,
+    spvrefl_memorymodel_vulkan      = 3,
+} spvrefl_memorymodel_e;
 
 typedef enum {
     spvrefl_idtype_unknown = 0,
     spvrefl_idtype_source_file_name,
     spvrefl_idtype_struct,
 } spvrefl_idtype_e;
+
+typedef enum {
+    spvrefl_execmode_Invocations,
+    spvrefl_execmode_SpacingEqual,
+    spvrefl_execmode_SpacingFractionalEven,
+    spvrefl_execmode_SpacingFractionalOdd,
+    spvrefl_execmode_VertexOrderCw,
+    spvrefl_execmode_VertexOrderCcw,
+    spvrefl_execmode_PixelCenterInteger,
+    spvrefl_execmode_OriginUpperLeft,
+    spvrefl_execmode_OriginLowerLeft,
+    spvrefl_execmode_EarlyFragmentTests,
+    spvrefl_execmode_PointMode,
+    spvrefl_execmode_Xfb,
+    spvrefl_execmode_DepthReplacing,
+    spvrefl_execmode_DepthGreater,
+    spvrefl_execmode_DepthLess,
+    spvrefl_execmode_DepthUnchanged,
+    spvrefl_execmode_LocalSize,
+    spvrefl_execmode_LocalSizeHint,
+    spvrefl_execmode_InputPoints,
+    spvrefl_execmode_InputLines,
+    spvrefl_execmode_InputLinesAdjacency,
+    spvrefl_execmode_Triangles,
+    spvrefl_execmode_InputTrianglesAdjacency,
+    spvrefl_execmode_Quads,
+    spvrefl_execmode_Isolines,
+    spvrefl_execmode_OutputVertices,
+    spvrefl_execmode_OutputPoints,
+    spvrefl_execmode_OutputLineStrip,
+    spvrefl_execmode_OutputTriangleStrip,
+    spvrefl_execmode_VecTypeHint,
+    spvrefl_execmode_ContractionOff,
+    spvrefl_execmode_Initializer,
+    spvrefl_execmode_Finalizer,
+    spvrefl_execmode_SubgroupSize,
+    spvrefl_execmode_SubgroupsPerWorkgroup,
+    spvrefl_execmode_SubgroupsPerWorkgroupId,
+    spvrefl_execmode_LocalSizeId,
+    spvrefl_execmode_LocalSizeHintId,
+    spvrefl_execmode_PostDepthCoverage,
+    spvrefl_execmode_DenormPreserve,
+    spvrefl_execmode_DenormFlushToZero,
+    spvrefl_execmode_SignedZeroInfNanPreserve,
+    spvrefl_execmode_RoundingModeRTE,
+    spvrefl_execmode_RoundingModeRTZ,
+    spvrefl_execmode_StencilRefReplacingEXT,
+    spvrefl_execmode_OutputLinesNV,
+    spvrefl_execmode_OutputPrimitivesNV,
+    spvrefl_execmode_DerivativeGroupQuadsNV,
+    spvrefl_execmode_DerivativeGroupLinearNV,
+    spvrefl_execmode_OutputTrianglesNV,
+    spvrefl_execmode_PixelInterlockOrderedEXT,
+    spvrefl_execmode_PixelInterlockUnorderedEXT,
+    spvrefl_execmode_SampleInterlockOrderedEXT,
+    spvrefl_execmode_SampleInterlockUnorderedEXT,
+    spvrefl_execmode_ShadingRateInterlockOrderedEXT,
+    spvrefl_execmode_ShadingRateInterlockUnorderedEXT,
+} spvrefl_execmode_e;
 
 typedef enum {
     spvrefl_capability_Matrix,
