@@ -75,12 +75,6 @@ typedef enum {
 } spvrefl_memorymodel_e;
 
 typedef enum {
-    spvrefl_idtype_unknown = 0,
-    spvrefl_idtype_source_file_name,
-    spvrefl_idtype_struct,
-} spvrefl_idtype_e;
-
-typedef enum {
     spvrefl_execmode_Invocations,
     spvrefl_execmode_SpacingEqual,
     spvrefl_execmode_SpacingFractionalEven,
@@ -138,6 +132,102 @@ typedef enum {
     spvrefl_execmode_ShadingRateInterlockOrderedEXT,
     spvrefl_execmode_ShadingRateInterlockUnorderedEXT,
 } spvrefl_execmode_e;
+
+typedef enum {
+    spvrefl_storageclass_UniformConstant          = 0,
+    spvrefl_storageclass_Input                    = 1,
+    spvrefl_storageclass_Uniform                  = 2,
+    spvrefl_storageclass_Output                   = 3,
+    spvrefl_storageclass_Workgroup                = 4,
+    spvrefl_storageclass_CrossWorkgroup           = 5,
+    spvrefl_storageclass_Private                  = 6,
+    spvrefl_storageclass_Function                 = 7,
+    spvrefl_storageclass_Generic                  = 8,
+    spvrefl_storageclass_PushConstant             = 9,
+    spvrefl_storageclass_AtomicCounter            = 10,
+    spvrefl_storageclass_Image                    = 11,
+    spvrefl_storageclass_StorageBuffer            = 12,
+    spvrefl_storageclass_CallableDataNV           = 5328,
+    spvrefl_storageclass_IncomingCallableDataNV   = 5329,
+    spvrefl_storageclass_RayPayloadNV             = 5338,
+    spvrefl_storageclass_HitAttributeNV           = 5339,
+    spvrefl_storageclass_IncomingRayPayloadNV     = 5342,
+    spvrefl_storageclass_ShaderRecordBufferNV     = 5343,
+    spvrefl_storageclass_PhysicalStorageBuffer    = 5349,
+    spvrefl_storageclass_PhysicalStorageBufferEXT = 5349,
+} spvrefl_storageclass_e;
+
+typedef enum {
+    spvrefl_dim_1D          = 0,
+    spvrefl_dim_2D          = 1,
+    spvrefl_dim_3D          = 2,
+    spvrefl_dim_Cube        = 3,
+    spvrefl_dim_Rect        = 4,
+    spvrefl_dim_Buffer      = 5,
+    spvrefl_dim_SubpassData = 6,
+} spvrefl_dim_e;
+
+typedef enum {
+    spvrefl_sampleraddressingmode_None           = 0,
+    spvrefl_sampleraddressingmode_ClampToEdge    = 1,
+    spvrefl_sampleraddressingmode_Clamp          = 2,
+    spvrefl_sampleraddressingmode_Repeat         = 3,
+    spvrefl_sampleraddressingmode_RepeatMirrored = 4,
+} spvrefl_sampleraddressingmode_e;
+
+typedef enum {
+    spvrefl_samplerfiltermode_Nearest = 0,
+    spvrefl_samplerfiltermode_Linear  = 1,
+} spvrefl_samplerfiltermode_e;
+
+typedef enum {
+    spvrefl_imageformat_Unknown      = 0,
+    spvrefl_imageformat_Rgba32f      = 1,
+    spvrefl_imageformat_Rgba16f      = 2,
+    spvrefl_imageformat_R32f         = 3,
+    spvrefl_imageformat_Rgba8        = 4,
+    spvrefl_imageformat_Rgba8Snorm   = 5,
+    spvrefl_imageformat_Rg32f        = 6,
+    spvrefl_imageformat_Rg16f        = 7,
+    spvrefl_imageformat_R11fG11fB10f = 8,
+    spvrefl_imageformat_R16f         = 9,
+    spvrefl_imageformat_Rgba16       = 10,
+    spvrefl_imageformat_Rgb10A2      = 11,
+    spvrefl_imageformat_Rg16         = 12,
+    spvrefl_imageformat_Rg8          = 13,
+    spvrefl_imageformat_R16          = 14,
+    spvrefl_imageformat_R8           = 15,
+    spvrefl_imageformat_Rgba16Snorm  = 16,
+    spvrefl_imageformat_Rg16Snorm    = 17,
+    spvrefl_imageformat_Rg8Snorm     = 18,
+    spvrefl_imageformat_R16Snorm     = 19,
+    spvrefl_imageformat_R8Snorm      = 20,
+    spvrefl_imageformat_Rgba32i      = 21,
+    spvrefl_imageformat_Rgba16i      = 22,
+    spvrefl_imageformat_Rgba8i       = 23,
+    spvrefl_imageformat_R32i         = 24,
+    spvrefl_imageformat_Rg32i        = 25,
+    spvrefl_imageformat_Rg16i        = 26,
+    spvrefl_imageformat_Rg8i         = 27,
+    spvrefl_imageformat_R16i         = 28,
+    spvrefl_imageformat_R8i          = 29,
+    spvrefl_imageformat_Rgba32ui     = 30,
+    spvrefl_imageformat_Rgba16ui     = 31,
+    spvrefl_imageformat_Rgba8ui      = 32,
+    spvrefl_imageformat_R32ui        = 33,
+    spvrefl_imageformat_Rgb10a2ui    = 34,
+    spvrefl_imageformat_Rg32ui       = 35,
+    spvrefl_imageformat_Rg16ui       = 36,
+    spvrefl_imageformat_Rg8ui        = 37,
+    spvrefl_imageformat_R16ui        = 38,
+    spvrefl_imageformat_R8ui         = 39,
+} spvrefl_imageformat_e;
+
+typedef enum {
+    spvrefl_idtype_unknown = 0,
+    spvrefl_idtype_source_file_name,
+    spvrefl_idtype_struct,
+} spvrefl_idtype_e;
 
 typedef enum {
     spvrefl_capability_Matrix,

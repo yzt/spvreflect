@@ -13,8 +13,8 @@ typedef struct {
     spvrefl_capability_e enum_bit;
     spvrefl_capability_e also_declares_enum_bits [2];
     char const * name_str;
-} spvrefl_internal_capability_entry_t;
-static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_data [] = {
+} ispvr_capability_entry_t;
+static ispvr_capability_entry_t const ispvr_capability_data [] = {
     {   0, spvrefl_capability_Matrix, {-1, -1}, "Matrix"},
     {   1, spvrefl_capability_Shader, {spvrefl_capability_Matrix, -1}, "Shader"},
     {   2, spvrefl_capability_Geometry, {spvrefl_capability_Shader, -1}, "Geometry"},
@@ -175,15 +175,15 @@ static spvrefl_internal_capability_entry_t const spvrefl_internal_capability_dat
     {5697, spvrefl_capability_SubgroupAvcMotionEstimationIntraINTEL, {-1, -1}, "SubgroupAvcMotionEstimationIntraINTEL"},
     {5698, spvrefl_capability_SubgroupAvcMotionEstimationChromaINTEL, {-1, -1}, "SubgroupAvcMotionEstimationChromaINTEL"},
 };
-static int const spvrefl_internal_capability_data_count = sizeof(spvrefl_internal_capability_data) / sizeof(spvrefl_internal_capability_data[0]);
+static int const ispvr_capability_data_count = sizeof(ispvr_capability_data) / sizeof(ispvr_capability_data[0]);
 
 typedef struct {
     uint32_t code;
     spvrefl_capability_e enum_bit;
     int param_count;    // 0, 1, or 3
     char const * name_str;
-} spvrefl_internal_execmode_entry_t;
-static spvrefl_internal_execmode_entry_t const spvrefl_internal_execmode_data [] = {
+} ispvr_execmode_entry_t;
+static ispvr_execmode_entry_t const ispvr_execmode_data [] = {
     {   0, spvrefl_execmode_Invocations, 1, "Invocations"},
     {   1, spvrefl_execmode_SpacingEqual, 0, "SpacingEqual"},
     {   2, spvrefl_execmode_SpacingFractionalEven, 0, "SpacingFractionalEven"},
@@ -250,20 +250,20 @@ typedef struct {
     uint32_t cur_word;
     uint16_t inst_word_count;
     uint16_t inst_opcode;
-} spvrefl_internal_input_t;
+} ispvr_input_t;
 
 static void
-spvrefl_internal_input_init (spvrefl_internal_input_t * input, void const * data, int size_in_words) {
+ispvr_input_init (ispvr_input_t * input, void const * data, int size_in_words) {
     input->ptr_begin = (uint32_t const *)data;
     input->ptr_end = input->ptr_begin + size_in_words;
     input->ptr_cur = input->ptr_begin;
 }
 static bool
-spvrefl_internal_input_ended (spvrefl_internal_input_t const * input) {
+ispvr_input_ended (ispvr_input_t const * input) {
     return !input || !input->ptr_cur || input->ptr_cur >= input->ptr_end;
 }
 static uint32_t
-spvrefl_internal_input_advance_data (spvrefl_internal_input_t * input) {
+ispvr_input_advance_data (ispvr_input_t * input) {
     if (input->ptr_cur < input->ptr_end)
         input->cur_word = *input->ptr_cur++;
     else
@@ -271,8 +271,8 @@ spvrefl_internal_input_advance_data (spvrefl_internal_input_t * input) {
     return input->cur_word;
 }
 static void
-spvrefl_internal_input_advance_instruction (spvrefl_internal_input_t * input) {
-    spvrefl_internal_input_advance_data(input);
+ispvr_input_advance_instruction (ispvr_input_t * input) {
+    ispvr_input_advance_data(input);
     input->inst_word_count = (uint16_t)(input->cur_word >> 16);
     input->inst_opcode = (uint16_t)(input->cur_word & 0xFFFF);
 }
@@ -281,15 +281,15 @@ typedef struct {
     char * begin;
     char * end;
     char * cur;
-} spvrefl_internal_stringtab_t;
+} ispvr_stringtab_t;
 
 static char *
-spvrefl_internal_stringtab_push (spvrefl_internal_stringtab_t * strtab, spvrefl_internal_input_t * input, uint16_t expected_words, unsigned * out_used_words) {
+ispvr_stringtab_push (ispvr_stringtab_t * strtab, ispvr_input_t * input, uint16_t expected_words, unsigned * out_used_words) {
     char * ret = strtab->cur;
     unsigned used_words = 0;
     bool ended = false;
     while (!ended && strtab->cur < strtab->end) {
-        uint32_t w = spvrefl_internal_input_advance_data(input);
+        uint32_t w = ispvr_input_advance_data(input);
         used_words += 1;
         for (int i = 0; i < 4 && !ended; ++i) {
             char c = w & 0xFF;
@@ -307,44 +307,44 @@ spvrefl_internal_stringtab_push (spvrefl_internal_stringtab_t * strtab, spvrefl_
 }
 
 static void
-spvrefl_internal_validate_capability_data () {
+ispvr_validate_capability_data () {
     //DEBUG_PRINT("[INTERNAL] Capbilities enum has %u struct_members.\n", spvrefl_capability__count);
-    //DEBUG_PRINT("[INTERNAL] Capbilities table has %u entries.\n", spvrefl_internal_capability_data_count);
-    if (spvrefl_capability__count != spvrefl_internal_capability_data_count)
+    //DEBUG_PRINT("[INTERNAL] Capbilities table has %u entries.\n", ispvr_capability_data_count);
+    if (spvrefl_capability__count != ispvr_capability_data_count)
         ERROR_PRINT("[INTERNAL ERROR] Capabilities enum and its corresponding table don't match in size.\n");
-    for (int i = 0; i < spvrefl_internal_capability_data_count; ++i) {
-        if (i != spvrefl_internal_capability_data[i].enum_bit)
-            ERROR_PRINT("[INTERNAL ERROR] Capability entry #%u doesn't match its enum bit #%d.\n", i, spvrefl_internal_capability_data[i].enum_bit);
+    for (int i = 0; i < ispvr_capability_data_count; ++i) {
+        if (i != ispvr_capability_data[i].enum_bit)
+            ERROR_PRINT("[INTERNAL ERROR] Capability entry #%u doesn't match its enum bit #%d.\n", i, ispvr_capability_data[i].enum_bit);
     }
 }
 static void
-spvrefl_internal_capability_add_simple (spvrefl_capability_set_t * capability_set, spvrefl_capability_e new_capability) {
+ispvr_capability_add_simple (spvrefl_capability_set_t * capability_set, spvrefl_capability_e new_capability) {
     capability_set->bits[new_capability / 32] |= 1U << (new_capability % 32);
 }
 static void
-spvrefl_internal_capability_add_with_requisites (spvrefl_capability_set_t * capability_set, spvrefl_capability_e new_capability) {
-    spvrefl_internal_capability_add_simple(capability_set, new_capability);
+ispvr_capability_add_with_requisites (spvrefl_capability_set_t * capability_set, spvrefl_capability_e new_capability) {
+    ispvr_capability_add_simple(capability_set, new_capability);
     for (int i = 0; i < 2; ++i) {
-        int additional = spvrefl_internal_capability_data[new_capability].also_declares_enum_bits[i];
+        int additional = ispvr_capability_data[new_capability].also_declares_enum_bits[i];
         if (additional != -1)
-            spvrefl_internal_capability_add_with_requisites(capability_set, additional);
+            ispvr_capability_add_with_requisites(capability_set, additional);
     }
 }
 static void
-spvrefl_internal_capability_find_and_add_with_requisites (spvrefl_capability_set_t * capability_set, uint32_t new_capability_code) {
+ispvr_capability_find_and_add_with_requisites (spvrefl_capability_set_t * capability_set, uint32_t new_capability_code) {
     int i = 0;
-    for (; i < spvrefl_internal_capability_data_count; ++i)
-        if (spvrefl_internal_capability_data[i].code == new_capability_code)
+    for (; i < ispvr_capability_data_count; ++i)
+        if (ispvr_capability_data[i].code == new_capability_code)
             break;
-    if (i < spvrefl_internal_capability_data_count) {
-        spvrefl_internal_capability_add_with_requisites(capability_set, spvrefl_internal_capability_data[i].enum_bit);
+    if (i < ispvr_capability_data_count) {
+        ispvr_capability_add_with_requisites(capability_set, ispvr_capability_data[i].enum_bit);
     } else {
         ERROR_PRINT("[SPVREFL INTERNAL ERROR] Couldn't find capability #%u in internal data tables.\n", new_capability_code);
     }
 }
 
 static spvrefl_struct_members_t *
-spvrefl_internal_alloc_struct_for_id (spvrefl_info_t * info, uint32_t struct_id, spvrefl_struct_members_t * structs) {
+ispvr_alloc_struct_for_id (spvrefl_info_t * info, uint32_t struct_id, spvrefl_struct_members_t * structs) {
     if (NULL == info->ids[struct_id].struct_members) {
         SPVREFL_ASSERT(spvrefl_idtype_struct == info->ids[struct_id].type || spvrefl_idtype_unknown == info->ids[struct_id].type);
         if (spvrefl_idtype_unknown == info->ids[struct_id].type) {
@@ -361,8 +361,8 @@ spvrefl_internal_alloc_struct_for_id (spvrefl_info_t * info, uint32_t struct_id,
 
 char const *
 spvrefl_get_capability_name (spvrefl_capability_e cap) {
-    if (cap >= 0 && cap < spvrefl_internal_capability_data_count)
-        return spvrefl_internal_capability_data[cap].name_str;
+    if (cap >= 0 && cap < ispvr_capability_data_count)
+        return ispvr_capability_data[cap].name_str;
     else
         return NULL;
 }
@@ -378,7 +378,7 @@ spvrefl_reflect (
     spvrefl_result_t ret = {0};
 
     /* Validate some internal stuff... */
-    //spvrefl_internal_validate_capability_data();
+    //ispvr_validate_capability_data();
 
     /* Check parameter errors... */
     if (!input_spirv || input_size_bytes <= 0 || !out_reflection_info) {
@@ -396,22 +396,22 @@ spvrefl_reflect (
         *((char *)info + i) = 0;
 
     /* Setup use of input... */
-    spvrefl_internal_input_t input_storage;
-    spvrefl_internal_input_t * input = &input_storage;
-    spvrefl_internal_input_init(input, input_spirv, input_size_bytes / 4);
+    ispvr_input_t input_storage;
+    ispvr_input_t * input = &input_storage;
+    ispvr_input_init(input, input_spirv, input_size_bytes / 4);
 
     /* Read header... */
-    info->magic_number = spvrefl_internal_input_advance_data(input);
+    info->magic_number = ispvr_input_advance_data(input);
     if (info->magic_number != 0x07230203) {
         ret.error_code = spvrefl_error_bad_magic_number;
         return ret;
     }
-    spvrefl_internal_input_advance_data(input);
+    ispvr_input_advance_data(input);
     info->version_major = (input->cur_word >> 16) & 0xFF;
     info->version_minor = (input->cur_word >>  8) & 0xFF;
-    info->generator = spvrefl_internal_input_advance_data(input);
-    info->id_upper_bound = spvrefl_internal_input_advance_data(input);
-    spvrefl_internal_input_advance_data(input);
+    info->generator = ispvr_input_advance_data(input);
+    info->id_upper_bound = ispvr_input_advance_data(input);
+    ispvr_input_advance_data(input);
 
     /* Setup use of scratch memory (id table and string table) */
     if (!scratch_memory || scratch_memory_size_bytes < (int)(info->id_upper_bound * sizeof(spvrefl_id_data_t))) {
@@ -442,8 +442,8 @@ spvrefl_reflect (
     }
 
     // String table must be the last thing in scratch memory, because it has variable length.
-    spvrefl_internal_stringtab_t strtab_storage = {0};
-    spvrefl_internal_stringtab_t * strtab = &strtab_storage;
+    ispvr_stringtab_t strtab_storage = {0};
+    ispvr_stringtab_t * strtab = &strtab_storage;
     if (scratch_left > 0) {
         strtab->begin = scratch;
         strtab->end = strtab->begin + scratch_left - 1;  // Reserve 1 byte for a sentinel NUL at the end
@@ -455,8 +455,8 @@ spvrefl_reflect (
     uint32_t id_of_source_file_name_string = ~0U;
 
     /* Read the instructions... */
-    while (!spvrefl_internal_input_ended(input)) {
-        spvrefl_internal_input_advance_instruction(input);
+    while (!ispvr_input_ended(input)) {
+        ispvr_input_advance_instruction(input);
         info->instruction_count += 1;
         
         uint16_t const word_count = input->inst_word_count;
@@ -465,20 +465,20 @@ spvrefl_reflect (
         switch (opcode) {
         case 17: {  // OpCapability
             SPVREFL_ASSERT(2 == word_count);
-            spvrefl_internal_input_advance_data(input);
-            spvrefl_internal_capability_find_and_add_with_requisites(&info->capabilities, input->cur_word);
+            ispvr_input_advance_data(input);
+            ispvr_capability_find_and_add_with_requisites(&info->capabilities, input->cur_word);
         } break;
         case 10: {  // OpExtension
             SPVREFL_ASSERT(2 <= word_count);
-            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
             info->extensions.needed_count += 1;
             if (info->extensions.count < SPVREFL_OPT_MAX_USED_EXTENSIONS)
                 info->extensions.names[info->extensions.count++] = str;
         } break;
         case 11: {  // OpExtInstImport
             SPVREFL_ASSERT(3 <= word_count);
-            uint32_t id = spvrefl_internal_input_advance_data(input);
-            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            uint32_t id = ispvr_input_advance_data(input);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
             info->instruction_sets.needed_count += 1;
             if (info->instruction_sets.count < SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT) {
                 info->instruction_sets.ids[info->instruction_sets.count] = id;
@@ -490,45 +490,45 @@ spvrefl_reflect (
             SPVREFL_ASSERT(5 <= word_count);
             DEBUG_PRINT("- (@%u) OpExtInst (%u words)\n", info->instruction_count, input->inst_word_count);
             for (unsigned i = 1; i < input->inst_word_count; ++i)
-                spvrefl_internal_input_advance_data(input);
+                ispvr_input_advance_data(input);
         } break;
         case 2: {   // OpSourceContinued
             SPVREFL_ASSERT(2 <= word_count);
             DEBUG_PRINT("- (@%u) OpSourceContinued (%u words)\n", info->instruction_count, input->inst_word_count);
             for (unsigned i = 1; i < input->inst_word_count; ++i)
-                spvrefl_internal_input_advance_data(input);
+                ispvr_input_advance_data(input);
         } break;
         case 3: {  // OpSource
             SPVREFL_ASSERT(3 <= word_count);
-            info->source_language = spvrefl_internal_input_advance_data(input);
-            info->source_language_version = spvrefl_internal_input_advance_data(input);
+            info->source_language = ispvr_input_advance_data(input);
+            info->source_language_version = ispvr_input_advance_data(input);
             if (word_count > 3)
-                id_of_source_file_name_string = spvrefl_internal_input_advance_data(input);
+                id_of_source_file_name_string = ispvr_input_advance_data(input);
             if (word_count > 4)
-                info->source_text = spvrefl_internal_stringtab_push(strtab, input, word_count - 4, NULL);
+                info->source_text = ispvr_stringtab_push(strtab, input, word_count - 4, NULL);
         } break;
         case 4: {  // OpSourceExtension
             SPVREFL_ASSERT(2 <= word_count);
-            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
             info->source_extensions.needed_count += 1;
             if (info->source_extensions.count < SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS)
                 info->source_extensions.names[info->source_extensions.count++] = str;
         } break;
         case 5: {   // OpName
             SPVREFL_ASSERT(3 <= word_count);
-            uint32_t id = spvrefl_internal_input_advance_data(input);
-            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            uint32_t id = ispvr_input_advance_data(input);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
             SPVREFL_ASSERT(id < info->id_upper_bound);
             info->ids[id].id = id;
             info->ids[id].name = str;
         } break;
         case 6: {   // OpMemberName
             SPVREFL_ASSERT(4 <= word_count);
-            uint32_t id = spvrefl_internal_input_advance_data(input);
-            int member_no = (int)spvrefl_internal_input_advance_data(input);
-            char const * str = spvrefl_internal_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            uint32_t id = ispvr_input_advance_data(input);
+            int member_no = (int)ispvr_input_advance_data(input);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 3, NULL);
             SPVREFL_ASSERT(id < info->id_upper_bound);
-            spvrefl_struct_members_t * struct_ptr = spvrefl_internal_alloc_struct_for_id(info, id, structtab);
+            spvrefl_struct_members_t * struct_ptr = ispvr_alloc_struct_for_id(info, id, structtab);
             if (member_no >= struct_ptr->needed_count)
                 struct_ptr->needed_count = member_no + 1;
             if (member_no >= struct_ptr->count && member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
@@ -536,10 +536,33 @@ spvrefl_reflect (
             if (member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
                 struct_ptr->names[member_no] = str;
         } break;
+        case 7: {   // OpString
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t id = ispvr_input_advance_data(input);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            SPVREFL_ASSERT(id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpString (%u words): #%u -> \"%s\"\n", info->instruction_count, input->inst_word_count, id, str);
+        } break;
+        case 8: {   // OpLine
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t file_id = ispvr_input_advance_data(input);
+            uint32_t line_no = ispvr_input_advance_data(input);
+            uint32_t column_no = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(file_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpLine (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, file_id, line_no, column_no);
+        } break;
+        case 71: {   // OpDecorate
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t target_id = ispvr_input_advance_data(input);
+            uint32_t line_no = ispvr_input_advance_data(input);
+            uint32_t column_no = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(file_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpLine (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, file_id, line_no, column_no);
+        } break;
         default: {
             //DEBUG_PRINT("[%hu, 0x%04hX] ", input->inst_word_count, input->inst_opcode);
             for (unsigned i = 1; i < word_count; ++i)
-                spvrefl_internal_input_advance_data(input);
+                ispvr_input_advance_data(input);
         } break;
         }
     }
