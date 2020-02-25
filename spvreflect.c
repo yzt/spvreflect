@@ -284,9 +284,9 @@ typedef struct {
 } ispvr_stringtab_t;
 
 static char *
-ispvr_stringtab_push (ispvr_stringtab_t * strtab, ispvr_input_t * input, uint16_t expected_words, unsigned * out_used_words) {
+ispvr_stringtab_push (ispvr_stringtab_t * strtab, ispvr_input_t * input, int expected_words, int * out_used_words) {
     char * ret = strtab->cur;
-    unsigned used_words = 0;
+    int used_words = 0;
     bool ended = false;
     while (!ended && strtab->cur < strtab->end) {
         uint32_t w = ispvr_input_advance_data(input);
@@ -299,7 +299,7 @@ ispvr_stringtab_push (ispvr_stringtab_t * strtab, ispvr_input_t * input, uint16_
         }
     }
     if (expected_words >= 0 && expected_words != used_words) {
-        ERROR_PRINT("[SPVREFL INTERNAL ERROR] Expected %u words in the literal string '%s', but found %u.\n", expected_words, ret, used_words);
+        ERROR_PRINT("[SPVREFL INTERNAL] Expected %u words in the literal string '%s', but found %u.\n", expected_words, ret, used_words);
     }
     if (out_used_words)
         *out_used_words = used_words;
@@ -463,35 +463,6 @@ spvrefl_reflect (
         uint16_t const opcode = input->inst_opcode;
 
         switch (opcode) {
-        case 17: {  // OpCapability
-            SPVREFL_ASSERT(2 == word_count);
-            ispvr_input_advance_data(input);
-            ispvr_capability_find_and_add_with_requisites(&info->capabilities, input->cur_word);
-        } break;
-        case 10: {  // OpExtension
-            SPVREFL_ASSERT(2 <= word_count);
-            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
-            info->extensions.needed_count += 1;
-            if (info->extensions.count < SPVREFL_OPT_MAX_USED_EXTENSIONS)
-                info->extensions.names[info->extensions.count++] = str;
-        } break;
-        case 11: {  // OpExtInstImport
-            SPVREFL_ASSERT(3 <= word_count);
-            uint32_t id = ispvr_input_advance_data(input);
-            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
-            info->instruction_sets.needed_count += 1;
-            if (info->instruction_sets.count < SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT) {
-                info->instruction_sets.ids[info->instruction_sets.count] = id;
-                info->instruction_sets.names[info->instruction_sets.count] = str;
-                info->instruction_sets.count += 1;
-            }
-        } break;
-        case 12: {  // OpExtInst
-            SPVREFL_ASSERT(5 <= word_count);
-            DEBUG_PRINT("- (@%u) OpExtInst (%u words)\n", info->instruction_count, input->inst_word_count);
-            for (unsigned i = 1; i < input->inst_word_count; ++i)
-                ispvr_input_advance_data(input);
-        } break;
         case 2: {   // OpSourceContinued
             SPVREFL_ASSERT(2 <= word_count);
             DEBUG_PRINT("- (@%u) OpSourceContinued (%u words)\n", info->instruction_count, input->inst_word_count);
@@ -536,6 +507,68 @@ spvrefl_reflect (
             if (member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
                 struct_ptr->names[member_no] = str;
         } break;
+        case 10: {  // OpExtension
+            SPVREFL_ASSERT(2 <= word_count);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
+            info->extensions.needed_count += 1;
+            if (info->extensions.count < SPVREFL_OPT_MAX_USED_EXTENSIONS)
+                info->extensions.names[info->extensions.count++] = str;
+        } break;
+        case 11: {  // OpExtInstImport
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t id = ispvr_input_advance_data(input);
+            char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
+            info->instruction_sets.needed_count += 1;
+            if (info->instruction_sets.count < SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT) {
+                info->instruction_sets.ids[info->instruction_sets.count] = id;
+                info->instruction_sets.names[info->instruction_sets.count] = str;
+                info->instruction_sets.count += 1;
+            }
+        } break;
+        case 12: {  // OpExtInst
+            SPVREFL_ASSERT(5 <= word_count);
+            DEBUG_PRINT("- (@%u) OpExtInst (%u words)\n", info->instruction_count, input->inst_word_count);
+            for (unsigned i = 1; i < input->inst_word_count; ++i)
+                ispvr_input_advance_data(input);
+        } break;
+        case 14: {  // OpMemoryModel
+            SPVREFL_ASSERT(3 == word_count);
+            info->addressing_model = ispvr_input_advance_data(input);
+            info->memory_model = ispvr_input_advance_data(input);
+        } break;
+        case 15: {  // OpEntryPoint
+            SPVREFL_ASSERT(4 <= word_count);
+            info->entry_points.needed_count += 1;
+            int cur_ep = info->entry_points.count;
+            if (cur_ep < SPVREFL_OPT_MAX_ENTRY_POINTS) {
+                info->entry_points.count += 1;
+                info->entry_points.functions[cur_ep].execution_model = ispvr_input_advance_data(input);
+                info->entry_points.functions[cur_ep].id = ispvr_input_advance_data(input);
+                int name_words = 0;
+                info->entry_points.functions[cur_ep].name = ispvr_stringtab_push(strtab, input, -1, &name_words);
+                int params_count = word_count - 3 - name_words;
+                int params_that_fit = (params_count <= SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS ? params_count : SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS);
+                info->entry_points.functions[cur_ep].needed_param_count = params_count;
+                info->entry_points.functions[cur_ep].param_count = params_that_fit;
+                for (int i = 0; i < params_that_fit; ++i)
+                    info->entry_points.functions[cur_ep].params[i] = ispvr_input_advance_data(input);
+                for (int i = params_that_fit; i < params_count; ++i)
+                    ispvr_input_advance_data(input);
+            } else {
+                for (unsigned i = 1; i < word_count; ++i)
+                    ispvr_input_advance_data(input);
+            }
+        } break;
+        case 16: {  // OpExecutionMode
+            
+        } break;
+        case 17: {  // OpCapability
+            SPVREFL_ASSERT(2 == word_count);
+            uint32_t cap = ispvr_input_advance_data(input);
+            ispvr_capability_find_and_add_with_requisites(&info->capabilities, cap);
+        } break;
+
+
         case 7: {   // OpString
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t id = ispvr_input_advance_data(input);

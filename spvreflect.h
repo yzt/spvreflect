@@ -9,19 +9,25 @@ extern "C" {
 #endif
 
 #if !defined(SPVREFL_OPT_MAX_USED_EXTENSIONS)
-    #define SPVREFL_OPT_MAX_USED_EXTENSIONS                         4
+    #define  SPVREFL_OPT_MAX_USED_EXTENSIONS                        4
 #endif
 #if !defined(SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT)
-    #define SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT    4
+    #define  SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT   4
 #endif
 #if !defined(SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS)
-    #define SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS                  4
+    #define  SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS                 4
+#endif
+#if !defined(SPVREFL_OPT_MAX_ENTRY_POINTS)
+    #define  SPVREFL_OPT_MAX_ENTRY_POINTS                           4
+#endif
+#if !defined(SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS)
+    #define  SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS                16
 #endif
 #if !defined(SPVREFL_OPT_MAX_STRUCT_COUNT)
-    #define SPVREFL_OPT_MAX_STRUCT_COUNT                            16
+    #define  SPVREFL_OPT_MAX_STRUCT_COUNT                           16
 #endif
 #if !defined(SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
-    #define SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT                     16
+    #define  SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT                    16
 #endif
 
 typedef enum {
@@ -534,11 +540,20 @@ typedef struct {
     char const * names [SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
 } spvrefl_source_extension_set_t;
 
-//typedef struct {
-//    int count;
-//    int needed_count;
-//    spvrefl_struct_t desc [SPVREFL_OPT_MAX_STRUCT_COUNT];
-//} spvrefl_struct_set_t;
+typedef struct {
+    spvrefl_executionmodel_e execution_model;
+    uint32_t id;
+    char const * name;
+    int param_count;
+    int needed_param_count;
+    uint32_t params [SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS];
+} spvrefl_entry_point_t;
+
+typedef struct {
+    int count;
+    int needed_count;
+    spvrefl_entry_point_t functions [SPVREFL_OPT_MAX_ENTRY_POINTS];
+} spvrefl_entry_point_set_t;
 
 typedef struct {
     uint32_t magic_number;
@@ -546,9 +561,14 @@ typedef struct {
     uint32_t generator;
     uint32_t id_upper_bound;
     uint32_t instruction_count;
+    
     spvrefl_capability_set_t capabilities;
     spvrefl_extension_set_t extensions;
     spvrefl_instruction_set_import_set_t instruction_sets;
+    spvrefl_addressingmodel_e addressing_model;
+    spvrefl_memorymodel_e memory_model;
+    spvrefl_entry_point_set_t entry_points;
+
     //spvrefl_struct_set_t structs;
     int struct_count;
     int struct_needed_count;
