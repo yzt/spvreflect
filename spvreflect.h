@@ -224,6 +224,109 @@ typedef enum {
 } spvrefl_imageformat_e;
 
 typedef enum {
+    spvrefl_imagechannelorder_R            = 0,
+    spvrefl_imagechannelorder_A            = 1,
+    spvrefl_imagechannelorder_RG           = 2,
+    spvrefl_imagechannelorder_RA           = 3,
+    spvrefl_imagechannelorder_RGB          = 4,
+    spvrefl_imagechannelorder_RGBA         = 5,
+    spvrefl_imagechannelorder_BGRA         = 6,
+    spvrefl_imagechannelorder_ARGB         = 7,
+    spvrefl_imagechannelorder_Intensity    = 8,
+    spvrefl_imagechannelorder_Luminance    = 9,
+    spvrefl_imagechannelorder_Rx           = 10,
+    spvrefl_imagechannelorder_RGx          = 11,
+    spvrefl_imagechannelorder_RGBx         = 12,
+    spvrefl_imagechannelorder_Depth        = 13,
+    spvrefl_imagechannelorder_DepthStencil = 14,
+    spvrefl_imagechannelorder_sRGB         = 15,
+    spvrefl_imagechannelorder_sRGBx        = 16,
+    spvrefl_imagechannelorder_sRGBA        = 17,
+    spvrefl_imagechannelorder_sBGRA        = 18,
+    spvrefl_imagechannelorder_ABGR         = 19,
+} spvrefl_imagechannelorder_e;
+
+typedef enum {
+    spvrefl_imagechanneldatatype_SnormInt8        = 0,
+    spvrefl_imagechanneldatatype_SnormInt16       = 1,
+    spvrefl_imagechanneldatatype_UnormInt8        = 2,
+    spvrefl_imagechanneldatatype_UnormInt16       = 3,
+    spvrefl_imagechanneldatatype_UnormShort565    = 4,
+    spvrefl_imagechanneldatatype_UnormShort555    = 5,
+    spvrefl_imagechanneldatatype_UnormInt101010   = 6,
+    spvrefl_imagechanneldatatype_SignedInt8       = 7,
+    spvrefl_imagechanneldatatype_SignedInt16      = 8,
+    spvrefl_imagechanneldatatype_SignedInt32      = 9,
+    spvrefl_imagechanneldatatype_UnsignedInt8     = 10,
+    spvrefl_imagechanneldatatype_UnsignedInt16    = 11,
+    spvrefl_imagechanneldatatype_UnsignedInt32    = 12,
+    spvrefl_imagechanneldatatype_HalfFloat        = 13,
+    spvrefl_imagechanneldatatype_Float            = 14,
+    spvrefl_imagechanneldatatype_UnormInt24       = 15,
+    spvrefl_imagechanneldatatype_UnormInt101010_2 = 16,
+} spvrefl_imagechanneldatatype_e;
+
+typedef enum {
+    spvrefl_imageoperands_None                  = 0x0,
+    spvrefl_imageoperands_Bias                  = 0x1,
+    spvrefl_imageoperands_Lod                   = 0x2,
+    spvrefl_imageoperands_Grad                  = 0x4,
+    spvrefl_imageoperands_ConstOffset           = 0x8,
+    spvrefl_imageoperands_Offset                = 0x10,
+    spvrefl_imageoperands_ConstOffsets          = 0x20,
+    spvrefl_imageoperands_Sample                = 0x40,
+    spvrefl_imageoperands_MinLod                = 0x80,
+    spvrefl_imageoperands_MakeTexelAvailable    = 0x100,
+  //spvrefl_imageoperands_MakeTexelAvailableKHR = 0x100,
+    spvrefl_imageoperands_MakeTexelVisible      = 0x200,
+  //spvrefl_imageoperands_MakeTexelVisibleKHR   = 0x200,
+    spvrefl_imageoperands_NonPrivateTexel       = 0x400,
+  //spvrefl_imageoperands_NonPrivateTexelKHR    = 0x400,
+    spvrefl_imageoperands_VolatileTexel         = 0x800,
+  //spvrefl_imageoperands_VolatileTexelKHR      = 0x800,
+    spvrefl_imageoperands_SignExtend            = 0x1000,
+    spvrefl_imageoperands_ZeroExtend            = 0x2000,
+} spvrefl_imageoperands_e;
+
+typedef enum {
+    spvrefl_fpfastmathmode_None       = 0x0,
+    spvrefl_fpfastmathmode_NotNaN     = 0x1,
+    spvrefl_fpfastmathmode_NotInf     = 0x2,
+    spvrefl_fpfastmathmode_NSZ        = 0x4,
+    spvrefl_fpfastmathmode_AllowRecip = 0x8,
+    spvrefl_fpfastmathmode_Fast       = 0x10,
+} spvrefl_fpfastmathmode_e;
+
+typedef enum {
+    spvrefl_fproundingmode_RTE = 0,
+    spvrefl_fproundingmode_RTZ = 1,
+    spvrefl_fproundingmode_RTP = 2,
+    spvrefl_fproundingmode_RTN = 3,
+} spvrefl_fproundingmode_e;
+
+typedef enum {
+    spvrefl_linkagetype_Export = 0,
+    spvrefl_linkagetype_Import = 1,
+} spvrefl_linkagetype_e;
+
+typedef enum {
+    spvrefl_accessqualifier_ReadOnly  = 0,
+    spvrefl_accessqualifier_WriteOnly = 1,
+    spvrefl_accessqualifier_ReadWrite = 2,
+} spvrefl_accessqualifier_e;
+
+typedef enum {
+    spvrefl_functionparamattrib_Zext        = 0,
+    spvrefl_functionparamattrib_Sext        = 1,
+    spvrefl_functionparamattrib_ByVal       = 2,
+    spvrefl_functionparamattrib_Sret        = 3,
+    spvrefl_functionparamattrib_NoAlias     = 4,
+    spvrefl_functionparamattrib_NoCapture   = 5,
+    spvrefl_functionparamattrib_NoWrite     = 6,
+    spvrefl_functionparamattrib_NoReadWrite = 7,
+} spvrefl_functionparamattrib_e;
+
+typedef enum {
     spvrefl_idtype_unknown = 0,
     spvrefl_idtype_source_file_name,
     spvrefl_idtype_struct,

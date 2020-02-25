@@ -552,12 +552,13 @@ spvrefl_reflect (
             DEBUG_PRINT("- (@%u) OpLine (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, file_id, line_no, column_no);
         } break;
         case 71: {   // OpDecorate
-            SPVREFL_ASSERT(4 == word_count);
+            SPVREFL_ASSERT(3 <= word_count);
             uint32_t target_id = ispvr_input_advance_data(input);
-            uint32_t line_no = ispvr_input_advance_data(input);
-            uint32_t column_no = ispvr_input_advance_data(input);
-            SPVREFL_ASSERT(file_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpLine (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, file_id, line_no, column_no);
+            uint32_t decoration = ispvr_input_advance_data(input);
+            for (unsigned i = 3; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(target_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpDecorate (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
         } break;
         default: {
             //DEBUG_PRINT("[%hu, 0x%04hX] ", input->inst_word_count, input->inst_opcode);
