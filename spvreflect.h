@@ -29,6 +29,9 @@ extern "C" {
 #if !defined(SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
     #define  SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT                    16
 #endif
+#if !defined(SPVREFL_OPT_MAX_DECORATIONS)
+    #define  SPVREFL_OPT_MAX_DECORATIONS                            8
+#endif
 
 typedef enum {
     spvrefl_error_none = 0,
@@ -333,6 +336,191 @@ typedef enum {
 } spvrefl_functionparamattrib_e;
 
 typedef enum {
+    spvrefl_decoration_RelaxedPrecision,
+    spvrefl_decoration_SpecId,
+    spvrefl_decoration_Block,
+    spvrefl_decoration_BufferBlock,
+    spvrefl_decoration_RowMajor,
+    spvrefl_decoration_ColMajor,
+    spvrefl_decoration_ArrayStride,
+    spvrefl_decoration_MatrixStride,
+    spvrefl_decoration_GLSLShared,
+    spvrefl_decoration_GLSLPacked,
+    spvrefl_decoration_CPacked,
+    spvrefl_decoration_BuiltIn,
+    spvrefl_decoration_NoPerspective,
+    spvrefl_decoration_Flat,
+    spvrefl_decoration_Patch,
+    spvrefl_decoration_Centroid,
+    spvrefl_decoration_Sample,
+    spvrefl_decoration_Invariant,
+    spvrefl_decoration_Restrict,
+    spvrefl_decoration_Aliased,
+    spvrefl_decoration_Volatile,
+    spvrefl_decoration_Constant,
+    spvrefl_decoration_Coherent,
+    spvrefl_decoration_NonWritable,
+    spvrefl_decoration_NonReadable,
+    spvrefl_decoration_Uniform,
+    spvrefl_decoration_UniformId,
+    spvrefl_decoration_SaturatedConversion,
+    spvrefl_decoration_Stream,
+    spvrefl_decoration_Location,
+    spvrefl_decoration_Component,
+    spvrefl_decoration_Index,
+    spvrefl_decoration_Binding,
+    spvrefl_decoration_DescriptorSet,
+    spvrefl_decoration_Offset,
+    spvrefl_decoration_XfbBuffer,
+    spvrefl_decoration_XfbStride,
+    spvrefl_decoration_FuncParamAttr,
+    spvrefl_decoration_FPRoundingMode,
+    spvrefl_decoration_FPFastMathMode,
+    spvrefl_decoration_LinkageAttributes,
+    spvrefl_decoration_NoContraction,
+    spvrefl_decoration_InputAttachmentIndex,
+    spvrefl_decoration_Alignment,
+    spvrefl_decoration_MaxByteOffset,
+    spvrefl_decoration_AlignmentId,
+    spvrefl_decoration_MaxByteOffsetId,
+    spvrefl_decoration_NoSignedWrap,
+    spvrefl_decoration_NoUnsignedWrap,
+    spvrefl_decoration_ExplicitInterpAMD,
+    spvrefl_decoration_OverrideCoverageNV,
+    spvrefl_decoration_PassthroughNV,
+    spvrefl_decoration_ViewportRelativeNV,
+    spvrefl_decoration_SecondaryViewportRelativeNV,
+    spvrefl_decoration_PerPrimitiveNV,
+    spvrefl_decoration_PerViewNV,
+    spvrefl_decoration_PerTaskNV,
+    spvrefl_decoration_PerVertexNV,
+    spvrefl_decoration_NonUniform,
+    spvrefl_decoration_NonUniformEXT,
+    spvrefl_decoration_RestrictPointer,
+    spvrefl_decoration_RestrictPointerEXT,
+    spvrefl_decoration_AliasedPointer,
+    spvrefl_decoration_AliasedPointerEXT,
+    spvrefl_decoration_CounterBuffer,
+    spvrefl_decoration_HlslCounterBufferGOOGLE,
+    spvrefl_decoration_UserSemantic,
+    spvrefl_decoration_HlslSemanticGOOGLE,
+    spvrefl_decoration_UserTypeGOOGLE,
+
+    spvrefl_decoration__count
+} spvrefl_decoration_e;
+
+typedef enum {
+    spvrefl_builtin_Position                    = 0,
+    spvrefl_builtin_PointSize                   = 1,
+    spvrefl_builtin_ClipDistance                = 3,
+    spvrefl_builtin_CullDistance                = 4,
+    spvrefl_builtin_VertexId                    = 5,
+    spvrefl_builtin_InstanceId                  = 6,
+    spvrefl_builtin_PrimitiveId                 = 7,
+    spvrefl_builtin_InvocationId                = 8,
+    spvrefl_builtin_Layer                       = 9,
+    spvrefl_builtin_ViewportIndex               = 10,
+    spvrefl_builtin_TessLevelOuter              = 11,
+    spvrefl_builtin_TessLevelInner              = 12,
+    spvrefl_builtin_TessCoord                   = 13,
+    spvrefl_builtin_PatchVertices               = 14,
+    spvrefl_builtin_FragCoord                   = 15,
+    spvrefl_builtin_PointCoord                  = 16,
+    spvrefl_builtin_FrontFacing                 = 17,
+    spvrefl_builtin_SampleId                    = 18,
+    spvrefl_builtin_SamplePosition              = 19,
+    spvrefl_builtin_SampleMask                  = 20,
+    spvrefl_builtin_FragDepth                   = 22,
+    spvrefl_builtin_HelperInvocation            = 23,
+    spvrefl_builtin_NumWorkgroups               = 24,
+    spvrefl_builtin_WorkgroupSize               = 25,
+    spvrefl_builtin_WorkgroupId                 = 26,
+    spvrefl_builtin_LocalInvocationId           = 27,
+    spvrefl_builtin_GlobalInvocationId          = 28,
+    spvrefl_builtin_LocalInvocationIndex        = 29,
+    spvrefl_builtin_WorkDim                     = 30,
+    spvrefl_builtin_GlobalSize                  = 31,
+    spvrefl_builtin_EnqueuedWorkgroupSize       = 32,
+    spvrefl_builtin_GlobalOffset                = 33,
+    spvrefl_builtin_GlobalLinearId              = 34,
+    spvrefl_builtin_SubgroupSize                = 36,
+    spvrefl_builtin_SubgroupMaxSize             = 37,
+    spvrefl_builtin_NumSubgroups                = 38,
+    spvrefl_builtin_NumEnqueuedSubgroups        = 39,
+    spvrefl_builtin_SubgroupId                  = 40,
+    spvrefl_builtin_SubgroupLocalInvocationId   = 41,
+    spvrefl_builtin_VertexIndex                 = 42,
+    spvrefl_builtin_InstanceIndex               = 43,
+    spvrefl_builtin_SubgroupEqMask              = 4416,
+    spvrefl_builtin_SubgroupGeMask              = 4417,
+    spvrefl_builtin_SubgroupGtMask              = 4418,
+    spvrefl_builtin_SubgroupLeMask              = 4419,
+    spvrefl_builtin_SubgroupLtMask              = 4420,
+  //spvrefl_builtin_SubgroupEqMaskKHR           = 4416,
+  //spvrefl_builtin_SubgroupGeMaskKHR           = 4417,
+  //spvrefl_builtin_SubgroupGtMaskKHR           = 4418,
+  //spvrefl_builtin_SubgroupLeMaskKHR           = 4419,
+  //spvrefl_builtin_SubgroupLtMaskKHR           = 4420,
+    spvrefl_builtin_BaseVertex                  = 4424,
+    spvrefl_builtin_BaseInstance                = 4425,
+    spvrefl_builtin_DrawIndex                   = 4426,
+    spvrefl_builtin_DeviceIndex                 = 4438,
+    spvrefl_builtin_ViewIndex                   = 4440,
+    spvrefl_builtin_BaryCoordNoPerspAMD         = 4992,
+    spvrefl_builtin_BaryCoordNoPerspCentroidAMD = 4993,
+    spvrefl_builtin_BaryCoordNoPerspSampleAMD   = 4994,
+    spvrefl_builtin_BaryCoordSmoothAMD          = 4995,
+    spvrefl_builtin_BaryCoordSmoothCentroidAMD  = 4996,
+    spvrefl_builtin_BaryCoordSmoothSampleAMD    = 4997,
+    spvrefl_builtin_BaryCoordPullModelAMD       = 4998,
+    spvrefl_builtin_FragStencilRefEXT           = 5014,
+    spvrefl_builtin_ViewportMaskNV              = 5253,
+    spvrefl_builtin_SecondaryPositionNV         = 5257,
+    spvrefl_builtin_SecondaryViewportMaskNV     = 5258,
+    spvrefl_builtin_PositionPerViewNV           = 5261,
+    spvrefl_builtin_ViewportMaskPerViewNV       = 5262,
+    spvrefl_builtin_FullyCoveredEXT             = 5264,
+    spvrefl_builtin_TaskCountNV                 = 5274,
+    spvrefl_builtin_PrimitiveCountNV            = 5275,
+    spvrefl_builtin_PrimitiveIndicesNV          = 5276,
+    spvrefl_builtin_ClipDistancePerViewNV       = 5277,
+    spvrefl_builtin_CullDistancePerViewNV       = 5278,
+    spvrefl_builtin_LayerPerViewNV              = 5279,
+    spvrefl_builtin_MeshViewCountNV             = 5280,
+    spvrefl_builtin_MeshViewIndicesNV           = 5281,
+    spvrefl_builtin_BaryCoordNV                 = 5286,
+    spvrefl_builtin_BaryCoordNoPerspNV          = 5287,
+    spvrefl_builtin_FragSizeEXT                 = 5292,
+  //spvrefl_builtin_FragmentSizeNV              = 5292,
+    spvrefl_builtin_FragInvocationCountEXT      = 5293,
+  //spvrefl_builtin_InvocationsPerPixelNV       = 5293,
+    spvrefl_builtin_LaunchIdNV                  = 5319,
+    spvrefl_builtin_LaunchSizeNV                = 5320,
+    spvrefl_builtin_WorldRayOriginNV            = 5321,
+    spvrefl_builtin_WorldRayDirectionNV         = 5322,
+    spvrefl_builtin_ObjectRayOriginNV           = 5323,
+    spvrefl_builtin_ObjectRayDirectionNV        = 5324,
+    spvrefl_builtin_RayTminNV                   = 5325,
+    spvrefl_builtin_RayTmaxNV                   = 5326,
+    spvrefl_builtin_InstanceCustomIndexNV       = 5327,
+    spvrefl_builtin_ObjectToWorldNV             = 5330,
+    spvrefl_builtin_WorldToObjectNV             = 5331,
+    spvrefl_builtin_HitTNV                      = 5332,
+    spvrefl_builtin_HitKindNV                   = 5333,
+    spvrefl_builtin_IncomingRayFlagsNV          = 5351,
+    spvrefl_builtin_WarpsPerSMNV                = 5374,
+    spvrefl_builtin_SMCountNV                   = 5375,
+    spvrefl_builtin_WarpIDNV                    = 5376,
+    spvrefl_builtin_SMIDNV                      = 5377,
+} spvrefl_builtin_e;
+
+//typedef enum {
+//    spvrefl_selectioncontrol_None           = 0x0,
+//    spvrefl_selectioncontrol_Flatten        = 0x1,
+//    spvrefl_selectioncontrol_DontFlatten    = 0x2,
+//} spvrefl_selectioncontrol_e;
+
+typedef enum {
     spvrefl_idtype_unknown = 0,
     spvrefl_idtype_source_file_name,
     spvrefl_idtype_struct,
@@ -521,6 +709,45 @@ typedef struct {
     uint32_t bits [5];
 } spvrefl_capability_set_t;
 
+typedef union {
+    uint32_t spec_const_id;
+    uint32_t array_stride;
+    uint32_t matrix_stride;
+    spvrefl_builtin_e builtin;
+    uint32_t exec_scope_id;
+    uint32_t stream_number;
+    uint32_t location;
+    uint32_t component;
+    uint32_t index;
+    uint32_t binding_point;
+    uint32_t descriptor_set;
+    uint32_t byte_offset;
+    uint32_t xfb_buffer_number;
+    uint32_t xfb_stride;
+    spvrefl_functionparamattrib_e func_param_attrib;
+    spvrefl_fproundingmode_e fp_rounding_mode;
+    spvrefl_fpfastmathmode_e fp_fast_math_mode;
+    spvrefl_linkagetype_e linkage_type;
+    uint32_t attachment_index;
+    uint32_t alignment;
+    uint32_t max_byte_offset;
+    uint32_t alignment_id;
+    uint32_t max_byte_offset_id;
+    uint32_t offset;
+    uint32_t counter_buffer_id;
+    uint32_t semantic;
+    uint32_t user_type;
+} spvrefl_decoration_param1_u;
+
+//typedef union {
+//} spvrefl_decoration_param2_u;
+
+typedef struct {
+    spvrefl_decoration_e decoration;
+    spvrefl_decoration_param1_u param1;
+    //spvrefl_decoration_param2_u param2;
+} spvrefl_decoration_t;
+
 typedef struct {
     int count;
     int needed_count;
@@ -556,6 +783,13 @@ typedef struct {
 } spvrefl_entry_point_set_t;
 
 typedef struct {
+    int count;
+    int needed_count;
+    spvrefl_decoration_t decorations [SPVREFL_OPT_MAX_DECORATIONS];
+} spvrefl_decoration_set_t;
+
+
+typedef struct {
     uint32_t magic_number;
     uint8_t version_major, version_minor;
     uint32_t generator;
@@ -568,6 +802,7 @@ typedef struct {
     spvrefl_addressingmodel_e addressing_model;
     spvrefl_memorymodel_e memory_model;
     spvrefl_entry_point_set_t entry_points;
+    spvrefl_decoration_set_t decorations;
 
     //spvrefl_struct_set_t structs;
     int struct_count;
