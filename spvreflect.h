@@ -8,14 +8,15 @@
 extern "C" {
 #endif
 
-#if !defined(SPVREFL_OPT_MAX_USED_EXTENSIONS)
-    #define  SPVREFL_OPT_MAX_USED_EXTENSIONS                        4
+#pragma region "Compile-Time Options"
+#if !defined(SPVREFL_OPT_MAX_EXTENSIONS)
+    #define  SPVREFL_OPT_MAX_EXTENSIONS                             4
 #endif
-#if !defined(SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT)
-    #define  SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT   4
+#if !defined(SPVREFL_OPT_MAX_EXTENDED_INSTRUCTION_SET_IMPORTS)
+    #define  SPVREFL_OPT_MAX_EXTENDED_INSTRUCTION_SET_IMPORTS       4
 #endif
-#if !defined(SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS)
-    #define  SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS                 4
+#if !defined(SPVREFL_OPT_MAX_SOURCE_EXTENSIONS)
+    #define  SPVREFL_OPT_MAX_SOURCE_EXTENSIONS                      4
 #endif
 #if !defined(SPVREFL_OPT_MAX_ENTRY_POINTS)
     #define  SPVREFL_OPT_MAX_ENTRY_POINTS                           4
@@ -29,10 +30,15 @@ extern "C" {
 #if !defined(SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
     #define  SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT                    16
 #endif
-#if !defined(SPVREFL_OPT_MAX_DECORATIONS)
-    #define  SPVREFL_OPT_MAX_DECORATIONS                            8
+#if !defined(SPVREFL_OPT_MAX_TOTAL_DECORATIONS)
+    #define  SPVREFL_OPT_MAX_TOTAL_DECORATIONS                      128
 #endif
+#if !defined(SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER)
+    #define  SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER           8
+#endif
+#pragma endregion
 
+#pragma region "Enumerations"
 typedef enum {
     spvrefl_error_none = 0,
     spvrefl_error_unknown,
@@ -514,17 +520,11 @@ typedef enum {
     spvrefl_builtin_SMIDNV                      = 5377,
 } spvrefl_builtin_e;
 
-//typedef enum {
-//    spvrefl_selectioncontrol_None           = 0x0,
-//    spvrefl_selectioncontrol_Flatten        = 0x1,
-//    spvrefl_selectioncontrol_DontFlatten    = 0x2,
-//} spvrefl_selectioncontrol_e;
-
 typedef enum {
-    spvrefl_idtype_unknown = 0,
-    spvrefl_idtype_source_file_name,
-    spvrefl_idtype_struct,
-} spvrefl_idtype_e;
+    spvrefl_selectioncontrol_None           = 0x0,
+    spvrefl_selectioncontrol_Flatten        = 0x1,
+    spvrefl_selectioncontrol_DontFlatten    = 0x2,
+} spvrefl_selectioncontrol_e;
 
 typedef enum {
     spvrefl_capability_Matrix,
@@ -690,26 +690,17 @@ typedef enum {
     spvrefl_capability__count
 } spvrefl_capability_e;
 
-typedef struct {
-    int count;
-    int needed_count;
-    char const * names [SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT];
-} spvrefl_struct_members_t;
+typedef enum {
+    spvrefl_idtype_unknown = 0,
+    spvrefl_idtype_source_file_name,
+    spvrefl_idtype_struct,
+} spvrefl_idtype_e;
+#pragma endregion
 
-typedef struct {
-    uint32_t id;
-    spvrefl_idtype_e type;
-    char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
-    spvrefl_struct_members_t * struct_members; // NULL for non-structs; otherwise will point into scratch memory passed to spvrefl_reflect()
-} spvrefl_id_data_t;
-
-typedef struct {
-    // NOTE: As of SPIR-V 1.5r2, there are 141 unique capabilities defined,
-    //       so they will fit in 160 bits.
-    uint32_t bits [5];
-} spvrefl_capability_set_t;
-
+#pragma region "Unions"
 typedef union {
+    uint32_t raw_value_;
+
     uint32_t spec_const_id;
     uint32_t array_stride;
     uint32_t matrix_stride;
@@ -741,31 +732,79 @@ typedef union {
 
 //typedef union {
 //} spvrefl_decoration_param2_u;
+#pragma endregion
 
+#pragma region "Structs"
 typedef struct {
     spvrefl_decoration_e decoration;
     spvrefl_decoration_param1_u param1;
     //spvrefl_decoration_param2_u param2;
 } spvrefl_decoration_t;
 
+///typedef struct {
+///    int count;
+///    int needed_count;
+///    int indices [SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER];
+///} spvrefl_decoration_index_set_t;
 typedef struct {
     int count;
     int needed_count;
-    char const * names [SPVREFL_OPT_MAX_USED_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
+    spvrefl_decoration_e decorations [SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER];
+    spvrefl_decoration_param1_u param_ones [SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER];
+    //spvrefl_decoration_param2_u param_twos [SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER];
+} spvrefl_decoration_set_t;
+
+typedef struct {
+    char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
+    ///spvrefl_decoration_index_set_t decorations;
+    spvrefl_decoration_set_t decorations;
+} spvrefl_struct_member_t;
+
+typedef struct {
+    int count;
+    int needed_count;
+    spvrefl_struct_member_t members [SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT];
+} spvrefl_struct_members_t;
+
+typedef struct {
+    uint32_t id;
+    spvrefl_idtype_e type;
+    char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
+    spvrefl_struct_members_t * struct_members; // NULL for non-structs; otherwise will point into scratch memory passed to spvrefl_reflect()
+    ///spvrefl_decoration_index_set_t decorations;
+    spvrefl_decoration_set_t decorations;
+} spvrefl_id_data_t;
+
+typedef struct {
+    // NOTE: As of SPIR-V 1.5r2, there are 141 unique capabilities defined,
+    //       so they will fit in 160 bits.
+    uint32_t bits [5];
+} spvrefl_capability_set_t;
+
+typedef struct {
+    int count;
+    int needed_count;
+    char const * names [SPVREFL_OPT_MAX_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
 } spvrefl_extension_set_t;
 
 typedef struct {
     int count;
     int needed_count;
-    uint32_t ids [SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT];
-    char const * names [SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT];  // Will point into scratch memory passed to spvrefl_reflect()
+    uint32_t ids [SPVREFL_OPT_MAX_EXTENDED_INSTRUCTION_SET_IMPORTS];
+    char const * names [SPVREFL_OPT_MAX_EXTENDED_INSTRUCTION_SET_IMPORTS];  // Will point into scratch memory passed to spvrefl_reflect()
 } spvrefl_instruction_set_import_set_t;
 
 typedef struct {
     int count;
     int needed_count;
-    char const * names [SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
+    char const * names [SPVREFL_OPT_MAX_SOURCE_EXTENSIONS];   // Will point into scratch memory passed to spvrefl_reflect()
 } spvrefl_source_extension_set_t;
+
+typedef struct {
+    spvrefl_execmode_e mode;
+    int param_count;
+    uint32_t params [3];
+} spvrefl_execmode_data_t;
 
 typedef struct {
     spvrefl_executionmodel_e execution_model;
@@ -773,7 +812,8 @@ typedef struct {
     char const * name;
     int param_count;
     int needed_param_count;
-    uint32_t params [SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS];
+    uint32_t parameter_ids [SPVREFL_OPT_MAX_ENTRY_POINT_FUNC_PARAMS];
+    spvrefl_execmode_data_t execmode;
 } spvrefl_entry_point_t;
 
 typedef struct {
@@ -782,12 +822,11 @@ typedef struct {
     spvrefl_entry_point_t functions [SPVREFL_OPT_MAX_ENTRY_POINTS];
 } spvrefl_entry_point_set_t;
 
-typedef struct {
-    int count;
-    int needed_count;
-    spvrefl_decoration_t decorations [SPVREFL_OPT_MAX_DECORATIONS];
-} spvrefl_decoration_set_t;
-
+///typedef struct {
+///    int count;
+///    int needed_count;
+///    spvrefl_decoration_t decorations [SPVREFL_OPT_MAX_TOTAL_DECORATIONS];
+///} spvrefl_decoration_set_t;
 
 typedef struct {
     uint32_t magic_number;
@@ -802,7 +841,7 @@ typedef struct {
     spvrefl_addressingmodel_e addressing_model;
     spvrefl_memorymodel_e memory_model;
     spvrefl_entry_point_set_t entry_points;
-    spvrefl_decoration_set_t decorations;
+    ///spvrefl_decoration_set_t decorations;
 
     //spvrefl_struct_set_t structs;
     int struct_count;
@@ -823,8 +862,9 @@ typedef struct {
     int error_position_byte;
     int scratch_memory_used_bytes;
 } spvrefl_result_t;
+#pragma endregion
 
-
+#pragma region "API"
 spvrefl_result_t
 spvrefl_reflect (
     void const * input_spirv,
@@ -834,9 +874,12 @@ spvrefl_reflect (
     int scratch_memory_size_bytes
 );
 
-
 char const *
 spvrefl_get_capability_name (spvrefl_capability_e cap);
+
+char const *
+spvrefl_get_decoration_name (spvrefl_decoration_e dec);
+#pragma endregion
 
 #if defined(__cplusplus)
 }

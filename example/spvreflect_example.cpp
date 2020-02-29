@@ -762,10 +762,18 @@ void print_result (spvrefl_result_t const & res, spvrefl_info_t const & inf) {
         for (int i = 0; i < inf.ids_count; ++i)
             if (inf.ids[i].id != ~0U) {
                 ::printf("\t\t\t#%3u -> \"%s\"", inf.ids[i].id, inf.ids[i].name);
+
+                if (inf.ids[i].decorations.needed_count > 0) {
+                    ::printf(" [decorations:%d/needed:%d ->", inf.ids[i].decorations.count, inf.ids[i].decorations.needed_count);
+                    for (int j = 0; j < inf.ids[i].decorations.count; ++j) {
+                        ::printf(" %s:%u", spvrefl_get_decoration_name(inf.ids[i].decorations.decorations[j]), inf.ids[i].decorations.param_ones[j].raw_value_);
+                    }
+                    ::printf("]");
+                }
                 if (inf.ids[i].type == spvrefl_idtype_struct) {
                     ::printf(" (struct: members: %d/needed: %d)\n", inf.ids[i].struct_members->count, inf.ids[i].struct_members->needed_count);
                     for (int j = 0; j < inf.ids[i].struct_members->count; ++j) {
-                        ::printf("\t\t\t\t - \"%s\"\n", inf.ids[i].struct_members->names[j]);
+                        ::printf("\t\t\t\t - \"%s\"\n", inf.ids[i].struct_members->members[j].name);
                     }
                 } else {
                     ::printf("\n");

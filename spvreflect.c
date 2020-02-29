@@ -1,9 +1,11 @@
-//#if defined(SPVREFL_IMPLEMENTATION)
+#define SPVREFL_IMPLEMENTATION
+#if defined(SPVREFL_IMPLEMENTATION)
 #include "spvreflect.h"
 
 #include <stdio.h>
-#define DEBUG_PRINT(...)        printf(__VA_ARGS__)
+#define DEBUG_PRINT(...)        printf("[DEBUG] " __VA_ARGS__)
 #define ERROR_PRINT(...)        printf("[ERROR] " __VA_ARGS__)
+#define DEPRECATED(...)         printf("[DEPRECATED] " __VA_ARGS__)
 
 #include <assert.h>
 #define SPVREFL_ASSERT(cond)    assert(cond)
@@ -241,6 +243,7 @@ static ispvr_execmode_entry_t const ispvr_execmode_data [] = {
     {5370, spvrefl_execmode_ShadingRateInterlockOrderedEXT  , 0, "ShadingRateInterlockOrderedEXT"},
     {5371, spvrefl_execmode_ShadingRateInterlockUnorderedEXT, 0, "ShadingRateInterlockUnorderedEXT"},
 };
+static int const ispvr_execmode_data_count = sizeof(ispvr_execmode_data) / sizeof(ispvr_execmode_data[0]);
 
 typedef struct {
     uint32_t code;
@@ -319,6 +322,14 @@ static ispvr_decoration_entry_t const ispvr_decoration_data [] = {
   //{5635, spvrefl_decoration_HlslSemanticGOOGLE         , 1, "HlslSemanticGOOGLE"         },  // params: Literal:Semantic
     {5636, spvrefl_decoration_UserTypeGOOGLE             , 1, "UserTypeGOOGLE"             },  // params: Literal:User Type
 };
+static int const ispvr_decoration_data_count = sizeof(ispvr_decoration_data) / sizeof(ispvr_decoration_data[0]);
+
+static void
+ispvr_zero_memory (void * ptr, size_t size) {
+    char * p = (char *)ptr;
+    for (size_t i = 0; i < size; ++i)
+        p[i] = 0;
+}
 
 typedef struct {
     uint32_t const * ptr_begin;
@@ -437,12 +448,72 @@ ispvr_alloc_struct_for_id (spvrefl_info_t * info, uint32_t struct_id, spvrefl_st
     return info->ids[struct_id].struct_members;
 }
 
-char const *
-spvrefl_get_capability_name (spvrefl_capability_e cap) {
-    if (cap >= 0 && cap < ispvr_capability_data_count)
-        return ispvr_capability_data[cap].name_str;
-    else
-        return NULL;
+static ispvr_execmode_entry_t const *
+ispvr_execmode_find_entry (uint32_t execmode_code) {
+    for (int i = 0; i < ispvr_execmode_data_count; ++i)
+        if (ispvr_execmode_data[i].code == execmode_code)
+            return &ispvr_execmode_data[i];
+    return NULL;
+}
+static bool
+ispvr_execmode_add_to_entrypoint (spvrefl_entry_point_set_t * entry_points, uint32_t entry_point_id, spvrefl_execmode_e execmode, int actual_param_count, uint32_t params [3]) {
+    bool ret = false;
+    ispvr_execmode_entry_t const * eme = ispvr_execmode_find_entry(execmode);
+    SPVREFL_ASSERT(eme != NULL);
+    SPVREFL_ASSERT(eme->param_count == actual_param_count);
+    if (eme) {
+        if (eme->param_count == actual_param_count) {
+            spvrefl_entry_point_t * ep = NULL;
+            for (int i = 0; i < entry_points->count; ++i)
+                if (entry_point_id == entry_points->functions[i].id) {
+                    ep = &entry_points->functions[i];
+                    break;
+                }
+            SPVREFL_ASSERT(ep != NULL);
+
+            if (ep) {
+                ep->execmode.mode = eme->enum_bit;
+                ep->execmode.param_count = actual_param_count;
+                for (int i = 0; i < actual_param_count; ++i)
+                    ep->execmode.params[i] = params[i];
+                ret = true;
+            } else {
+                ERROR_PRINT("[SPVREFL INTERNAL] Couldn't find the specified entry point ID #%u.", entry_point_id);
+            }
+        } else {
+            ERROR_PRINT("[SPVREFL INTERNAL] Expected %d parameters for execmode \"%s\", but %d params found.", eme->param_count, eme->name_str, actual_param_count);
+        }
+    } else {
+        ERROR_PRINT("[SPVREFL INTERNAL] Couldn't find the specified execution mode data (%d).", execmode);
+    }
+    return ret;
+}
+
+static ispvr_decoration_entry_t const *
+ispvr_decoration_find_entry (uint32_t decoration_code) {
+    for (int i = 0; i < ispvr_decoration_data_count; ++i)
+        if (ispvr_decoration_data[i].code == decoration_code)
+            return &ispvr_decoration_data[i];
+    return NULL;
+}
+static bool
+ispvr_decorate (spvrefl_decoration_set_t * decoration_set, /*spvrefl_decoration_index_set_t * index_set,*/ spvrefl_decoration_e decoration_no, int param_count, uint32_t param1) {
+    bool ret = false;
+    ispvr_decoration_entry_t const * de = ispvr_decoration_find_entry(decoration_no);
+    SPVREFL_ASSERT(de);
+    if (de) {
+        decoration_set->needed_count += 1;
+        if (decoration_set->count < SPVREFL_OPT_MAX_TOTAL_DECORATIONS) {
+            int idx = decoration_set->count;
+            decoration_set->count += 1;
+            decoration_set->decorations[idx] = de->enum_bit;
+            if (param_count > 0)
+                decoration_set->param_ones[idx].raw_value_ = param1;
+            ret = true;
+        }
+    } else {
+    }
+    return ret;
 }
 
 spvrefl_result_t
@@ -470,8 +541,7 @@ spvrefl_reflect (
 
     /* Zero-out output reflection info... */
     spvrefl_info_t * info = out_reflection_info;
-    for (unsigned i = 0; i < sizeof(*info); ++i)
-        *((char *)info + i) = 0;
+    ispvr_zero_memory(info, sizeof(*info));
 
     /* Setup use of input... */
     ispvr_input_t input_storage;
@@ -496,6 +566,8 @@ spvrefl_reflect (
         ret.error_code = spvrefl_error_insufficient_scratch_mem;
         return ret;
     }
+    ispvr_zero_memory(scratch_memory, scratch_memory_size_bytes);
+
     char * scratch = (char *)scratch_memory;
     int scratch_left = scratch_memory_size_bytes;
 
@@ -512,12 +584,18 @@ spvrefl_reflect (
     spvrefl_struct_members_t * structtab = (spvrefl_struct_members_t *)scratch;
     scratch += SPVREFL_OPT_MAX_STRUCT_COUNT * sizeof(spvrefl_struct_members_t);
     scratch_left -= SPVREFL_OPT_MAX_STRUCT_COUNT * sizeof(spvrefl_struct_members_t);
-    for (int i = 0; i < SPVREFL_OPT_MAX_STRUCT_COUNT; ++i) {
-        structtab[i].count = 0;
-        structtab[i].needed_count = 0;
-        for (int j = 0; j < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT; ++j)
-            structtab[i].names[j] = NULL;
-    }
+    ispvr_zero_memory(structtab, SPVREFL_OPT_MAX_STRUCT_COUNT * sizeof(spvrefl_struct_members_t));
+    //for (int i = 0; i < SPVREFL_OPT_MAX_STRUCT_COUNT; ++i) {
+    //    structtab[i].count = 0;
+    //    structtab[i].needed_count = 0;
+    //    for (int j = 0; j < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT; ++j) {
+    //        structtab[i].members[j].name = NULL;
+    //        structtab[i].members[j].decorations.count = 0;
+    //        structtab[i].members[j].decorations.needed_count = 0;
+    //        for (int k = 0; k < SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER; ++k)
+    //            structtab[i].members[j].decorations.indices[k] = -1;
+    //    }
+    //}
 
     // String table must be the last thing in scratch memory, because it has variable length.
     ispvr_stringtab_t strtab_storage = {0};
@@ -560,7 +638,7 @@ spvrefl_reflect (
             SPVREFL_ASSERT(2 <= word_count);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
             info->source_extensions.needed_count += 1;
-            if (info->source_extensions.count < SPVREFL_OPT_MAX_USED_SOURCE_EXTENSIONS)
+            if (info->source_extensions.count < SPVREFL_OPT_MAX_SOURCE_EXTENSIONS)
                 info->source_extensions.names[info->source_extensions.count++] = str;
         } break;
         case 5: {   // OpName
@@ -583,13 +661,13 @@ spvrefl_reflect (
             if (member_no >= struct_ptr->count && member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
                 struct_ptr->count = member_no + 1;
             if (member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
-                struct_ptr->names[member_no] = str;
+                struct_ptr->members[member_no].name = str;
         } break;
         case 10: {  // OpExtension
             SPVREFL_ASSERT(2 <= word_count);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
             info->extensions.needed_count += 1;
-            if (info->extensions.count < SPVREFL_OPT_MAX_USED_EXTENSIONS)
+            if (info->extensions.count < SPVREFL_OPT_MAX_EXTENSIONS)
                 info->extensions.names[info->extensions.count++] = str;
         } break;
         case 11: {  // OpExtInstImport
@@ -597,7 +675,7 @@ spvrefl_reflect (
             uint32_t id = ispvr_input_advance_data(input);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
             info->instruction_sets.needed_count += 1;
-            if (info->instruction_sets.count < SPVREFL_OPT_MAX_USED_EXTENDED_INSTRUCTION_SET_IMPORT) {
+            if (info->instruction_sets.count < SPVREFL_OPT_MAX_EXTENDED_INSTRUCTION_SET_IMPORTS) {
                 info->instruction_sets.ids[info->instruction_sets.count] = id;
                 info->instruction_sets.names[info->instruction_sets.count] = str;
                 info->instruction_sets.count += 1;
@@ -629,7 +707,7 @@ spvrefl_reflect (
                 info->entry_points.functions[cur_ep].needed_param_count = params_count;
                 info->entry_points.functions[cur_ep].param_count = params_that_fit;
                 for (int i = 0; i < params_that_fit; ++i)
-                    info->entry_points.functions[cur_ep].params[i] = ispvr_input_advance_data(input);
+                    info->entry_points.functions[cur_ep].parameter_ids[i] = ispvr_input_advance_data(input);
                 for (int i = params_that_fit; i < params_count; ++i)
                     ispvr_input_advance_data(input);
             } else {
@@ -638,7 +716,16 @@ spvrefl_reflect (
             }
         } break;
         case 16: {  // OpExecutionMode
-            
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t entry_point_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(entry_point_id < info->id_upper_bound);
+            uint32_t exec_mode_no = ispvr_input_advance_data(input);
+            int param_count = word_count - 3;
+            SPVREFL_ASSERT(param_count <= 3);
+            uint32_t params [3];
+            for (int i = 0; i < 3 && i < param_count; ++i)
+                params[i] = ispvr_input_advance_data(input);
+            ispvr_execmode_add_to_entrypoint(&info->entry_points, entry_point_id, exec_mode_no, param_count, params);
         } break;
         case 17: {  // OpCapability
             SPVREFL_ASSERT(2 == word_count);
@@ -646,6 +733,62 @@ spvrefl_reflect (
             ispvr_capability_find_and_add_with_requisites(&info->capabilities, cap);
         } break;
 
+        case 71: {   // OpDecorate
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t target_id = ispvr_input_advance_data(input);
+            uint32_t decoration = ispvr_input_advance_data(input);
+            int param_count = (word_count > 3 ? 1 : 0);
+            uint32_t param = (param_count > 0 ? ispvr_input_advance_data(input) : 0);
+            for (unsigned i = 4; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(target_id < info->id_upper_bound);
+            //DEBUG_PRINT("- (@%u) OpDecorate (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
+            ispvr_decorate(/*&info->decorations,*/ &info->ids[target_id].decorations, decoration, param_count, param);
+        } break;
+        case 72: {   // OpMemberDecorate
+            SPVREFL_ASSERT(4 <= word_count);
+            uint32_t struct_id = ispvr_input_advance_data(input);
+            int member_no = ispvr_input_advance_data(input);
+            uint32_t decoration = ispvr_input_advance_data(input);
+            int param_count = (word_count > 4 ? 1 : 0);
+            uint32_t param = (param_count > 0 ? ispvr_input_advance_data(input) : 0);
+            for (unsigned i = 5; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(struct_id < info->id_upper_bound);
+            SPVREFL_ASSERT(info->ids[struct_id].type == spvrefl_idtype_struct);
+            SPVREFL_ASSERT(info->ids[struct_id].struct_members);
+            SPVREFL_ASSERT(info->ids[struct_id].struct_members->count > member_no);
+            //DEBUG_PRINT("- (@%u) OpMemberDecorate (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, struct_id, member_no, decoration);
+            ispvr_decorate(/*&info->decorations,*/ &info->ids[struct_id].struct_members->members[member_no].decorations, decoration, param_count, param);
+        } break;
+        case 332: {   // OpDecorateId
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t target_id = ispvr_input_advance_data(input);
+            uint32_t decoration = ispvr_input_advance_data(input);
+            for (unsigned i = 3; i < word_count; ++i)
+                ispvr_input_advance_data(input);    // These are IDs
+            SPVREFL_ASSERT(target_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpDecorateId (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
+        } break;
+        case 5632: {   // OpDecorateString
+            SPVREFL_ASSERT(4 <= word_count);
+            uint32_t target_id = ispvr_input_advance_data(input);
+            uint32_t decoration = ispvr_input_advance_data(input);
+            for (unsigned i = 3; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(target_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpDecorateString (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
+        } break;
+        case 5633: {   // OpMemberDecorateString
+            SPVREFL_ASSERT(5 <= word_count);
+            uint32_t struct_id = ispvr_input_advance_data(input);
+            uint32_t member_no = ispvr_input_advance_data(input);
+            uint32_t decoration = ispvr_input_advance_data(input);
+            for (unsigned i = 4; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(struct_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpMemberDecorateString (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, struct_id, member_no, decoration);
+        } break;
 
         case 7: {   // OpString
             SPVREFL_ASSERT(3 <= word_count);
@@ -662,24 +805,25 @@ spvrefl_reflect (
             SPVREFL_ASSERT(file_id < info->id_upper_bound);
             DEBUG_PRINT("- (@%u) OpLine (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, file_id, line_no, column_no);
         } break;
-        case 71: {   // OpDecorate
-            SPVREFL_ASSERT(3 <= word_count);
-            uint32_t target_id = ispvr_input_advance_data(input);
-            uint32_t decoration = ispvr_input_advance_data(input);
-            for (unsigned i = 3; i < word_count; ++i)
-                ispvr_input_advance_data(input);
-            SPVREFL_ASSERT(target_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpDecorate (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
+
+        case 73: {  // OpDecorationGroup
+            SPVREFL_ASSERT(2 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            DEPRECATED("- (@%u) OpDecorationGroup (%u words) -> #%u\n", info->instruction_count, input->inst_word_count, result_id);
         } break;
-        case 72: {   // OpMemberDecorate
-            SPVREFL_ASSERT(4 <= word_count);
-            uint32_t struct_id = ispvr_input_advance_data(input);
-            uint32_t member_no = ispvr_input_advance_data(input);
-            uint32_t decoration = ispvr_input_advance_data(input);
-            for (unsigned i = 4; i < word_count; ++i)
+        case 74: {  // OpGroupDecorate
+            SPVREFL_ASSERT(2 <= word_count);
+            uint32_t group_id = ispvr_input_advance_data(input);
+            DEPRECATED("- (@%u) OpGroupDecorate (%u words) -> #%u\n", info->instruction_count, input->inst_word_count, group_id);
+            for (unsigned i = 2; i < word_count; ++i)
                 ispvr_input_advance_data(input);
-            SPVREFL_ASSERT(struct_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpMemberDecorate (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, struct_id, member_no, decoration);
+        } break;
+        case 75: {  // OpGroupMemberDecorate
+            SPVREFL_ASSERT(2 <= word_count);
+            uint32_t group_id = ispvr_input_advance_data(input);
+            DEPRECATED("- (@%u) OpGroupMemberDecorate (%u words) -> #%u\n", info->instruction_count, input->inst_word_count, group_id);
+            for (unsigned i = 2; i < word_count; ++i)
+                ispvr_input_advance_data(input);
         } break;
         default: {
             //DEBUG_PRINT("[%hu, 0x%04hX] ", input->inst_word_count, input->inst_opcode);
@@ -694,4 +838,20 @@ spvrefl_reflect (
     return ret;
 }
 
-//#endif  // SPVREFL_IMPLEMENTATION
+char const *
+spvrefl_get_capability_name (spvrefl_capability_e cap) {
+    if (cap >= 0 && cap < ispvr_capability_data_count)
+        return ispvr_capability_data[cap].name_str;
+    else
+        return NULL;
+}
+
+char const *
+spvrefl_get_decoration_name (spvrefl_decoration_e dec) {
+    if (dec >= 0 && dec < ispvr_decoration_data_count)
+        return ispvr_decoration_data[dec].name_str;
+    else
+        return NULL;
+}
+
+#endif  // SPVREFL_IMPLEMENTATION
