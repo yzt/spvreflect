@@ -758,6 +758,25 @@ void print_result (spvrefl_result_t const & res, spvrefl_info_t const & inf) {
         ::printf("\n");
         ::printf("  *  Addressing Model: %u\n", inf.addressing_model);
         ::printf("  *      Memory Model: %u\n", inf.memory_model);
+        ::printf("  *      Entry Points: (count=%d/needed=%d)\n", inf.entry_points.count, inf.entry_points.needed_count);
+        for (int i = 0; i < inf.entry_points.count; ++i) {
+            ::printf("    - \"%s\", #%u, model: %s, mode: %s [%d, %u,%u,%u], args (count:%d/needed:%d) ["
+                , inf.entry_points.functions[i].name
+                , inf.entry_points.functions[i].id
+                , spvrefl_get_executionmodel_name(inf.entry_points.functions[i].execution_model)
+                , spvrefl_get_execmode_name(inf.entry_points.functions[i].execmode.mode)
+                , inf.entry_points.functions[i].execmode.param_count
+                , inf.entry_points.functions[i].execmode.params[0]
+                , inf.entry_points.functions[i].execmode.params[1]
+                , inf.entry_points.functions[i].execmode.params[2]
+                , inf.entry_points.functions[i].param_count
+                , inf.entry_points.functions[i].needed_param_count
+            );
+            for (int j = 0; j < inf.entry_points.functions[i].param_count; ++j) {
+                ::printf(" #%u", inf.entry_points.functions[i].parameter_ids[j]);
+            }
+            ::printf("]\n");
+        }
         ::printf("  *              IDs :\n");
         for (int i = 0; i < inf.ids_count; ++i)
             if (inf.ids[i].id != ~0U) {

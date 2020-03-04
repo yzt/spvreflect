@@ -879,6 +879,12 @@ spvrefl_get_capability_name (spvrefl_capability_e cap);
 
 char const *
 spvrefl_get_decoration_name (spvrefl_decoration_e dec);
+
+char const *
+spvrefl_get_execmode_name (spvrefl_execmode_e em);
+
+char const *
+spvrefl_get_executionmodel_name (spvrefl_executionmodel_e emodel);
 #pragma endregion
 
 #if defined(__cplusplus)

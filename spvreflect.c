@@ -619,13 +619,13 @@ spvrefl_reflect (
         uint16_t const opcode = input->inst_opcode;
 
         switch (opcode) {
-        case 2: {   // OpSourceContinued
+        case 2: {       // OpSourceContinued
             SPVREFL_ASSERT(2 <= word_count);
             DEBUG_PRINT("- (@%u) OpSourceContinued (%u words)\n", info->instruction_count, input->inst_word_count);
             for (unsigned i = 1; i < input->inst_word_count; ++i)
                 ispvr_input_advance_data(input);
         } break;
-        case 3: {  // OpSource
+        case 3: {       // OpSource
             SPVREFL_ASSERT(3 <= word_count);
             info->source_language = ispvr_input_advance_data(input);
             info->source_language_version = ispvr_input_advance_data(input);
@@ -634,14 +634,14 @@ spvrefl_reflect (
             if (word_count > 4)
                 info->source_text = ispvr_stringtab_push(strtab, input, word_count - 4, NULL);
         } break;
-        case 4: {  // OpSourceExtension
+        case 4: {       // OpSourceExtension
             SPVREFL_ASSERT(2 <= word_count);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
             info->source_extensions.needed_count += 1;
             if (info->source_extensions.count < SPVREFL_OPT_MAX_SOURCE_EXTENSIONS)
                 info->source_extensions.names[info->source_extensions.count++] = str;
         } break;
-        case 5: {   // OpName
+        case 5: {       // OpName
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t id = ispvr_input_advance_data(input);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
@@ -649,7 +649,7 @@ spvrefl_reflect (
             info->ids[id].id = id;
             info->ids[id].name = str;
         } break;
-        case 6: {   // OpMemberName
+        case 6: {       // OpMemberName
             SPVREFL_ASSERT(4 <= word_count);
             uint32_t id = ispvr_input_advance_data(input);
             int member_no = (int)ispvr_input_advance_data(input);
@@ -663,14 +663,14 @@ spvrefl_reflect (
             if (member_no < SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
                 struct_ptr->members[member_no].name = str;
         } break;
-        case 10: {  // OpExtension
+        case 10: {      // OpExtension
             SPVREFL_ASSERT(2 <= word_count);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 1, NULL);
             info->extensions.needed_count += 1;
             if (info->extensions.count < SPVREFL_OPT_MAX_EXTENSIONS)
                 info->extensions.names[info->extensions.count++] = str;
         } break;
-        case 11: {  // OpExtInstImport
+        case 11: {      // OpExtInstImport
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t id = ispvr_input_advance_data(input);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
@@ -681,18 +681,18 @@ spvrefl_reflect (
                 info->instruction_sets.count += 1;
             }
         } break;
-        case 12: {  // OpExtInst
+        case 12: {      // OpExtInst
             SPVREFL_ASSERT(5 <= word_count);
             DEBUG_PRINT("- (@%u) OpExtInst (%u words)\n", info->instruction_count, input->inst_word_count);
             for (unsigned i = 1; i < input->inst_word_count; ++i)
                 ispvr_input_advance_data(input);
         } break;
-        case 14: {  // OpMemoryModel
+        case 14: {      // OpMemoryModel
             SPVREFL_ASSERT(3 == word_count);
             info->addressing_model = ispvr_input_advance_data(input);
             info->memory_model = ispvr_input_advance_data(input);
         } break;
-        case 15: {  // OpEntryPoint
+        case 15: {      // OpEntryPoint
             SPVREFL_ASSERT(4 <= word_count);
             info->entry_points.needed_count += 1;
             int cur_ep = info->entry_points.count;
@@ -715,7 +715,7 @@ spvrefl_reflect (
                     ispvr_input_advance_data(input);
             }
         } break;
-        case 16: {  // OpExecutionMode
+        case 16: {      // OpExecutionMode
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t entry_point_id = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(entry_point_id < info->id_upper_bound);
@@ -727,13 +727,13 @@ spvrefl_reflect (
                 params[i] = ispvr_input_advance_data(input);
             ispvr_execmode_add_to_entrypoint(&info->entry_points, entry_point_id, exec_mode_no, param_count, params);
         } break;
-        case 17: {  // OpCapability
+        case 17: {      // OpCapability
             SPVREFL_ASSERT(2 == word_count);
             uint32_t cap = ispvr_input_advance_data(input);
             ispvr_capability_find_and_add_with_requisites(&info->capabilities, cap);
         } break;
 
-        case 71: {   // OpDecorate
+        case 71: {      // OpDecorate
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t target_id = ispvr_input_advance_data(input);
             uint32_t decoration = ispvr_input_advance_data(input);
@@ -745,7 +745,7 @@ spvrefl_reflect (
             //DEBUG_PRINT("- (@%u) OpDecorate (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
             ispvr_decorate(/*&info->decorations,*/ &info->ids[target_id].decorations, decoration, param_count, param);
         } break;
-        case 72: {   // OpMemberDecorate
+        case 72: {      // OpMemberDecorate
             SPVREFL_ASSERT(4 <= word_count);
             uint32_t struct_id = ispvr_input_advance_data(input);
             int member_no = ispvr_input_advance_data(input);
@@ -761,7 +761,7 @@ spvrefl_reflect (
             //DEBUG_PRINT("- (@%u) OpMemberDecorate (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, struct_id, member_no, decoration);
             ispvr_decorate(/*&info->decorations,*/ &info->ids[struct_id].struct_members->members[member_no].decorations, decoration, param_count, param);
         } break;
-        case 332: {   // OpDecorateId
+        case 332: {     // OpDecorateId
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t target_id = ispvr_input_advance_data(input);
             uint32_t decoration = ispvr_input_advance_data(input);
@@ -770,7 +770,7 @@ spvrefl_reflect (
             SPVREFL_ASSERT(target_id < info->id_upper_bound);
             DEBUG_PRINT("- (@%u) OpDecorateId (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
         } break;
-        case 5632: {   // OpDecorateString
+        case 5632: {    // OpDecorateString
             SPVREFL_ASSERT(4 <= word_count);
             uint32_t target_id = ispvr_input_advance_data(input);
             uint32_t decoration = ispvr_input_advance_data(input);
@@ -779,7 +779,7 @@ spvrefl_reflect (
             SPVREFL_ASSERT(target_id < info->id_upper_bound);
             DEBUG_PRINT("- (@%u) OpDecorateString (%u words): #%u, %u\n", info->instruction_count, input->inst_word_count, target_id, decoration);
         } break;
-        case 5633: {   // OpMemberDecorateString
+        case 5633: {    // OpMemberDecorateString
             SPVREFL_ASSERT(5 <= word_count);
             uint32_t struct_id = ispvr_input_advance_data(input);
             uint32_t member_no = ispvr_input_advance_data(input);
@@ -790,14 +790,164 @@ spvrefl_reflect (
             DEBUG_PRINT("- (@%u) OpMemberDecorateString (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, struct_id, member_no, decoration);
         } break;
 
-        case 7: {   // OpString
+        case 19: {      // OpTypeVoid
+            SPVREFL_ASSERT(2 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeVoid (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+        } break;
+        case 20: {      // OpTypeBool
+            SPVREFL_ASSERT(2 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeBool (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+        } break;
+        case 21: {      // OpTypeInt
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t width = ispvr_input_advance_data(input);
+            uint32_t signedness = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeInt (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, width, signedness);
+        } break;
+        case 22: {      // OpTypeFloat
+            SPVREFL_ASSERT(3 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t width = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeFloat (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, width);
+        } break;
+        case 23: {      // OpTypeVector
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t comp_type_id = ispvr_input_advance_data(input);
+            uint32_t comp_count = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeVector (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, comp_type_id, comp_count);
+        } break;
+        case 24: {      // OpTypeMatrix
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t column_type_id = ispvr_input_advance_data(input);
+            uint32_t column_count = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeMatrix (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, column_type_id, column_count);
+        } break;
+        case 25: {      // OpTypeImage
+            SPVREFL_ASSERT(9 <= word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t sampled_type_id = ispvr_input_advance_data(input);
+            spvrefl_dim_e dim = ispvr_input_advance_data(input);
+            uint32_t depth_no_yes_unknown = ispvr_input_advance_data(input);
+            uint32_t arrayed_no_yes = ispvr_input_advance_data(input);
+            uint32_t multisampled_no_yes = ispvr_input_advance_data(input);
+            uint32_t sampled_runtime_yes_no = ispvr_input_advance_data(input);
+            spvrefl_imageformat_e image_format = ispvr_input_advance_data(input);
+            bool has_access_qual = (word_count > 9);
+            spvrefl_accessqualifier_e access_qual = (has_access_qual ? ispvr_input_advance_data(input) : 0);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeImage (%u words): %u, %u, %u, %u, %u, %u, %u, %u, %u\n"
+                , info->instruction_count, input->inst_word_count
+                , result_id, sampled_type_id, dim, depth_no_yes_unknown
+                , arrayed_no_yes, multisampled_no_yes, sampled_runtime_yes_no
+                , image_format, access_qual
+            );
+        } break;
+        case 26: {      // OpTypeSampler
+            SPVREFL_ASSERT(2 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeSampler (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+        } break;
+        case 27: {      // OpTypeSampledImage
+            SPVREFL_ASSERT(3 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t image_type_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            SPVREFL_ASSERT(image_type_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeSampledImage (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, image_type_id);
+        } break;
+        case 28: {      // OpTypeArray
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t element_type_id = ispvr_input_advance_data(input);
+            uint32_t length_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            SPVREFL_ASSERT(element_type_id < info->id_upper_bound);
+            //SPVREFL_ASSERT(length_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeArray (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, element_type_id, length_id);
+        } break;
+        case 29: {      // OpTypeRuntimeArray
+            SPVREFL_ASSERT(3 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t element_type_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            SPVREFL_ASSERT(element_type_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeRuntimeArray (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, element_type_id);
+        } break;
+        case 30: {      // OpTypeStruct
+            SPVREFL_ASSERT(2 <= word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            for (unsigned i = 2; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeStruct (%u words): %u, member count=%u\n", info->instruction_count, input->inst_word_count, result_id, word_count - 2);
+        } break;
+        case 31: {      // OpTypeOpaque
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            char const * name_str = ispvr_stringtab_push(strtab, input, word_count - 2, NULL);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeOpaque (%u words): %u, \"%s\"\n", info->instruction_count, input->inst_word_count, result_id, name_str);
+        } break;
+        case 32: {      // OpTypePointer
+            SPVREFL_ASSERT(4 == word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            spvrefl_storageclass_e storage_class = ispvr_input_advance_data(input);
+            uint32_t type_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            SPVREFL_ASSERT(type_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypePointer (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, storage_class, type_id);
+        } break;
+        case 33: {      // OpTypeFunction
+            SPVREFL_ASSERT(3 <= word_count);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t return_type_id = ispvr_input_advance_data(input);
+            for (unsigned i = 3; i < word_count; ++i)
+                ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            SPVREFL_ASSERT(return_type_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpTypeFunction (%u words): %u, %u, param count=%u\n", info->instruction_count, input->inst_word_count, result_id, return_type_id, word_count - 3);
+        } break;
+
+        case 54: {      // OpFunction
+            SPVREFL_ASSERT(5 == word_count);
+            uint32_t result_type_id = ispvr_input_advance_data(input);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            uint32_t function_control = ispvr_input_advance_data(input);
+            uint32_t function_type_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_type_id < info->id_upper_bound);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            SPVREFL_ASSERT(function_type_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpFunction (%u words): %u, %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id, function_control, function_type_id);
+        } break;
+        case 55: {      // OpFunctionParameter
+            SPVREFL_ASSERT(3 == word_count);
+            uint32_t result_type_id = ispvr_input_advance_data(input);
+            uint32_t result_id = ispvr_input_advance_data(input);
+            SPVREFL_ASSERT(result_type_id < info->id_upper_bound);
+            SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            DEBUG_PRINT("- (@%u) OpFunctionParameter (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id);
+        } break;
+
+        case 7: {       // OpString
             SPVREFL_ASSERT(3 <= word_count);
             uint32_t id = ispvr_input_advance_data(input);
             char const * str = ispvr_stringtab_push(strtab, input, input->inst_word_count - 2, NULL);
             SPVREFL_ASSERT(id < info->id_upper_bound);
             DEBUG_PRINT("- (@%u) OpString (%u words): #%u -> \"%s\"\n", info->instruction_count, input->inst_word_count, id, str);
         } break;
-        case 8: {   // OpLine
+        case 8: {       // OpLine
             SPVREFL_ASSERT(4 == word_count);
             uint32_t file_id = ispvr_input_advance_data(input);
             uint32_t line_no = ispvr_input_advance_data(input);
@@ -806,19 +956,19 @@ spvrefl_reflect (
             DEBUG_PRINT("- (@%u) OpLine (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, file_id, line_no, column_no);
         } break;
 
-        case 73: {  // OpDecorationGroup
+        case 73: {      // OpDecorationGroup
             SPVREFL_ASSERT(2 == word_count);
             uint32_t result_id = ispvr_input_advance_data(input);
             DEPRECATED("- (@%u) OpDecorationGroup (%u words) -> #%u\n", info->instruction_count, input->inst_word_count, result_id);
         } break;
-        case 74: {  // OpGroupDecorate
+        case 74: {      // OpGroupDecorate
             SPVREFL_ASSERT(2 <= word_count);
             uint32_t group_id = ispvr_input_advance_data(input);
             DEPRECATED("- (@%u) OpGroupDecorate (%u words) -> #%u\n", info->instruction_count, input->inst_word_count, group_id);
             for (unsigned i = 2; i < word_count; ++i)
                 ispvr_input_advance_data(input);
         } break;
-        case 75: {  // OpGroupMemberDecorate
+        case 75: {      // OpGroupMemberDecorate
             SPVREFL_ASSERT(2 <= word_count);
             uint32_t group_id = ispvr_input_advance_data(input);
             DEPRECATED("- (@%u) OpGroupMemberDecorate (%u words) -> #%u\n", info->instruction_count, input->inst_word_count, group_id);
@@ -839,19 +989,49 @@ spvrefl_reflect (
 }
 
 char const *
-spvrefl_get_capability_name (spvrefl_capability_e cap) {
-    if (cap >= 0 && cap < ispvr_capability_data_count)
-        return ispvr_capability_data[cap].name_str;
+spvrefl_get_capability_name (spvrefl_capability_e e) {
+    if (e >= 0 && e < ispvr_capability_data_count)
+        return ispvr_capability_data[e].name_str;
     else
         return NULL;
 }
 
 char const *
-spvrefl_get_decoration_name (spvrefl_decoration_e dec) {
-    if (dec >= 0 && dec < ispvr_decoration_data_count)
-        return ispvr_decoration_data[dec].name_str;
+spvrefl_get_decoration_name (spvrefl_decoration_e e) {
+    if (e >= 0 && e < ispvr_decoration_data_count)
+        return ispvr_decoration_data[e].name_str;
     else
         return NULL;
+}
+
+char const *
+spvrefl_get_execmode_name (spvrefl_execmode_e e) {
+    if (e >= 0 && e < ispvr_execmode_data_count)
+        return ispvr_execmode_data[e].name_str;
+    else
+        return NULL;
+}
+
+char const *
+spvrefl_get_executionmodel_name (spvrefl_executionmodel_e e) {
+    switch (e) {
+    case spvrefl_executionmodel_vertex        : return "Vertex";
+    case spvrefl_executionmodel_tess_control  : return "TessellationControl";
+    case spvrefl_executionmodel_tess_eval     : return "TessellationEvaluation";
+    case spvrefl_executionmodel_geometry      : return "Geometry";
+    case spvrefl_executionmodel_fragment      : return "Fragment";
+    case spvrefl_executionmodel_glcompute     : return "Compute";
+    case spvrefl_executionmodel_kernel        : return "Kernel";
+    case spvrefl_executionmodel_task_nv       : return "TaskNV";
+    case spvrefl_executionmodel_mesh_nv       : return "MeshNV";
+    case spvrefl_executionmodel_ray_gen_nv    : return "RayGenerationNV";
+    case spvrefl_executionmodel_intersect_nv  : return "IntersectNV";
+    case spvrefl_executionmodel_anyhit_nv     : return "AnyHitNV";
+    case spvrefl_executionmodel_closesthit_nv : return "ClosestHitNV";
+    case spvrefl_executionmodel_miss_nv       : return "MissNV";
+    case spvrefl_executionmodel_callable_nv   : return "CallableNV";
+    default: return NULL;
+    }
 }
 
 #endif  // SPVREFL_IMPLEMENTATION
