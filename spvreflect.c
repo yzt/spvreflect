@@ -2,6 +2,10 @@
 #if defined(SPVREFL_IMPLEMENTATION)
 #include "spvreflect.h"
 
+#if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
+#include <stdio.h>
+#endif
+
 #include <stdio.h>
 #define DEBUG_PRINT(...)        printf("[DEBUG] " __VA_ARGS__)
 #define ERROR_PRINT(...)        printf("[ERROR] " __VA_ARGS__)
@@ -435,9 +439,18 @@ ispvr_capability_find_and_add_with_requisites (spvrefl_capability_set_t * capabi
 static spvrefl_struct_members_t *
 ispvr_alloc_struct_for_id (spvrefl_info_t * info, uint32_t struct_id, spvrefl_struct_members_t * structs) {
     if (NULL == info->ids[struct_id].struct_members) {
-        SPVREFL_ASSERT(spvrefl_idtype_struct == info->ids[struct_id].type || spvrefl_idtype_unknown == info->ids[struct_id].type);
-        if (spvrefl_idtype_unknown == info->ids[struct_id].type) {
-            info->ids[struct_id].type = spvrefl_idtype_struct;
+        //SPVREFL_ASSERT (
+        //    spvrefl_idtype_struct == info->ids[struct_id].type ||
+        //    spvrefl_idtype_unknown == info->ids[struct_id].type
+        //);
+        SPVREFL_ASSERT(
+            spvrefl_basictype_struct == info->ids[struct_id].type.basic_type ||
+            spvrefl_basictype_not_a_type == info->ids[struct_id].type.basic_type
+        );
+        //if (spvrefl_type_unknown == info->ids[struct_id].type) {
+        if (spvrefl_basictype_not_a_type == info->ids[struct_id].type.basic_type) {
+            //info->ids[struct_id].type = spvrefl_idtype_struct;
+            info->ids[struct_id].type.basic_type = spvrefl_basictype_struct;
             info->struct_needed_count += 1;
             if (info->struct_count < SPVREFL_OPT_MAX_STRUCT_COUNT) {
                 info->ids[struct_id].struct_members = structs + info->struct_count;
@@ -503,7 +516,7 @@ ispvr_decorate (spvrefl_decoration_set_t * decoration_set, /*spvrefl_decoration_
     SPVREFL_ASSERT(de);
     if (de) {
         decoration_set->needed_count += 1;
-        if (decoration_set->count < SPVREFL_OPT_MAX_TOTAL_DECORATIONS) {
+        if (decoration_set->count < SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER) {
             int idx = decoration_set->count;
             decoration_set->count += 1;
             decoration_set->decorations[idx] = de->enum_bit;
@@ -755,7 +768,8 @@ spvrefl_reflect (
             for (unsigned i = 5; i < word_count; ++i)
                 ispvr_input_advance_data(input);
             SPVREFL_ASSERT(struct_id < info->id_upper_bound);
-            SPVREFL_ASSERT(info->ids[struct_id].type == spvrefl_idtype_struct);
+            //SPVREFL_ASSERT (info->ids[struct_id].type == spvrefl_idtype_struct);
+            SPVREFL_ASSERT(info->ids[struct_id].type.basic_type == spvrefl_basictype_struct);
             SPVREFL_ASSERT(info->ids[struct_id].struct_members);
             SPVREFL_ASSERT(info->ids[struct_id].struct_members->count > member_no);
             //DEBUG_PRINT("- (@%u) OpMemberDecorate (%u words): #%u, %u, %u\n", info->instruction_count, input->inst_word_count, struct_id, member_no, decoration);
@@ -794,13 +808,21 @@ spvrefl_reflect (
             SPVREFL_ASSERT(2 == word_count);
             uint32_t result_id = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeVoid (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+            //DEBUG_PRINT("- (@%u) OpTypeVoid (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            info->ids[result_id].type.basic_type = spvrefl_basictype_void;
+            info->ids[result_id].type.columns = 1;
+            info->ids[result_id].type.rows = 1;
         } break;
         case 20: {      // OpTypeBool
             SPVREFL_ASSERT(2 == word_count);
             uint32_t result_id = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeBool (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+            //DEBUG_PRINT("- (@%u) OpTypeBool (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            info->ids[result_id].type.basic_type = spvrefl_basictype_bool;
+            info->ids[result_id].type.columns = 1;
+            info->ids[result_id].type.rows = 1;
         } break;
         case 21: {      // OpTypeInt
             SPVREFL_ASSERT(4 == word_count);
@@ -808,14 +830,24 @@ spvrefl_reflect (
             uint32_t width = ispvr_input_advance_data(input);
             uint32_t signedness = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeInt (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, width, signedness);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            info->ids[result_id].type.basic_type = (signedness ? spvrefl_basictype_sint : spvrefl_basictype_uint);
+            info->ids[result_id].type.component_bit_size = (uint8_t)width;
+            info->ids[result_id].type.columns = 1;
+            info->ids[result_id].type.rows = 1;
+            //DEBUG_PRINT("- (@%u) OpTypeInt (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, width, signedness);
         } break;
         case 22: {      // OpTypeFloat
             SPVREFL_ASSERT(3 == word_count);
             uint32_t result_id = ispvr_input_advance_data(input);
             uint32_t width = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeFloat (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, width);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            info->ids[result_id].type.basic_type = spvrefl_basictype_float;
+            info->ids[result_id].type.component_bit_size = (uint8_t)width;
+            info->ids[result_id].type.columns = 1;
+            info->ids[result_id].type.rows = 1;
+            //DEBUG_PRINT("- (@%u) OpTypeFloat (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, width);
         } break;
         case 23: {      // OpTypeVector
             SPVREFL_ASSERT(4 == word_count);
@@ -823,7 +855,15 @@ spvrefl_reflect (
             uint32_t comp_type_id = ispvr_input_advance_data(input);
             uint32_t comp_count = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeVector (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, comp_type_id, comp_count);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[comp_type_id].type.basic_type);
+            SPVREFL_ASSERT(1 == info->ids[comp_type_id].type.columns && 1 == info->ids[comp_type_id].type.rows);
+            SPVREFL_ASSERT(2 <= comp_count && comp_count <= 8);
+            info->ids[result_id].type.basic_type = info->ids[comp_type_id].type.basic_type;
+            info->ids[result_id].type.component_bit_size = info->ids[comp_type_id].type.component_bit_size;
+            info->ids[result_id].type.rows = (uint8_t)comp_count;
+            info->ids[result_id].type.columns = 1;
+            //DEBUG_PRINT("- (@%u) OpTypeVector (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, comp_type_id, comp_count);
         } break;
         case 24: {      // OpTypeMatrix
             SPVREFL_ASSERT(4 == word_count);
@@ -831,7 +871,15 @@ spvrefl_reflect (
             uint32_t column_type_id = ispvr_input_advance_data(input);
             uint32_t column_count = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeMatrix (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, column_type_id, column_count);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[column_type_id].type.basic_type);
+            SPVREFL_ASSERT(1 == info->ids[column_type_id].type.columns && 1 != info->ids[column_type_id].type.rows);
+            SPVREFL_ASSERT(2 <= column_count && column_count <= 8);
+            info->ids[result_id].type.basic_type = info->ids[column_type_id].type.basic_type;
+            info->ids[result_id].type.component_bit_size = info->ids[column_type_id].type.component_bit_size;
+            info->ids[result_id].type.rows = info->ids[column_type_id].type.rows;
+            info->ids[result_id].type.columns = (uint8_t)column_count;
+            //DEBUG_PRINT("- (@%u) OpTypeMatrix (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, column_type_id, column_count);
         } break;
         case 25: {      // OpTypeImage
             SPVREFL_ASSERT(9 <= word_count);
@@ -846,18 +894,33 @@ spvrefl_reflect (
             bool has_access_qual = (word_count > 9);
             spvrefl_accessqualifier_e access_qual = (has_access_qual ? ispvr_input_advance_data(input) : 0);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeImage (%u words): %u, %u, %u, %u, %u, %u, %u, %u, %u\n"
-                , info->instruction_count, input->inst_word_count
-                , result_id, sampled_type_id, dim, depth_no_yes_unknown
-                , arrayed_no_yes, multisampled_no_yes, sampled_runtime_yes_no
-                , image_format, access_qual
-            );
+            SPVREFL_ASSERT(sampled_type_id < info->id_upper_bound);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[sampled_type_id].type.basic_type);
+            info->ids[result_id].type = info->ids[sampled_type_id].type;    // Copy the basic data for the sampled type
+            info->ids[result_id].type.image_type = spvrefl_imagetype_image;
+            info->ids[result_id].type.image_dimensions = dim;
+            info->ids[result_id].type.image_is_depth = depth_no_yes_unknown;
+            info->ids[result_id].type.image_is_array = arrayed_no_yes;
+            info->ids[result_id].type.image_is_multisampled = multisampled_no_yes;
+            info->ids[result_id].type.image_is_sampled = sampled_runtime_yes_no;
+            info->ids[result_id].type.image_format = image_format;
+            info->ids[result_id].type.has_image_access_qualifier = has_access_qual;
+            info->ids[result_id].type.image_access_qualifier = access_qual;
+            //DEBUG_PRINT("- (@%u) OpTypeImage (%u words): result id:%u, sampled type id:%u, dim:%u, depth:%u, arrayed:%u, MS:%u, sampled:%u, fmt:%u, access qual:%u\n"
+            //    , info->instruction_count, input->inst_word_count
+            //    , result_id, sampled_type_id, dim, depth_no_yes_unknown
+            //    , arrayed_no_yes, multisampled_no_yes, sampled_runtime_yes_no
+            //    , image_format, access_qual
+            //);
         } break;
         case 26: {      // OpTypeSampler
             SPVREFL_ASSERT(2 == word_count);
             uint32_t result_id = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeSampler (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            info->ids[result_id].type.basic_type = spvrefl_basictype_sampler;
+            //DEBUG_PRINT("- (@%u) OpTypeSampler (%u words): %u\n", info->instruction_count, input->inst_word_count, result_id);
         } break;
         case 27: {      // OpTypeSampledImage
             SPVREFL_ASSERT(3 == word_count);
@@ -865,7 +928,11 @@ spvrefl_reflect (
             uint32_t image_type_id = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
             SPVREFL_ASSERT(image_type_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeSampledImage (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, image_type_id);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            SPVREFL_ASSERT(spvrefl_imagetype_image == info->ids[image_type_id].type.image_type);
+            info->ids[result_id].type = info->ids[image_type_id].type;    // Copy the basic data for the sampled type
+            info->ids[result_id].type.image_type = spvrefl_imagetype_sampled_image;
+            //DEBUG_PRINT("- (@%u) OpTypeSampledImage (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, image_type_id);
         } break;
         case 28: {      // OpTypeArray
             SPVREFL_ASSERT(4 == word_count);
@@ -875,7 +942,12 @@ spvrefl_reflect (
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
             SPVREFL_ASSERT(element_type_id < info->id_upper_bound);
             //SPVREFL_ASSERT(length_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeArray (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, element_type_id, length_id);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[element_type_id].type.image_type);
+            info->ids[result_id].type = info->ids[element_type_id].type;    // Copy the basic data for the sampled type
+            info->ids[result_id].type.is_array = true;
+            info->ids[result_id].type.array_elem_count = length_id;
+            //DEBUG_PRINT("- (@%u) OpTypeArray (%u words): %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_id, element_type_id, length_id);
         } break;
         case 29: {      // OpTypeRuntimeArray
             SPVREFL_ASSERT(3 == word_count);
@@ -883,7 +955,11 @@ spvrefl_reflect (
             uint32_t element_type_id = ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
             SPVREFL_ASSERT(element_type_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpTypeRuntimeArray (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, element_type_id);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
+            SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[element_type_id].type.image_type);
+            info->ids[result_id].type = info->ids[element_type_id].type;    // Copy the basic data for the sampled type
+            info->ids[result_id].type.is_array = true;
+            //DEBUG_PRINT("- (@%u) OpTypeRuntimeArray (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_id, element_type_id);
         } break;
         case 30: {      // OpTypeStruct
             SPVREFL_ASSERT(2 <= word_count);
@@ -891,6 +967,7 @@ spvrefl_reflect (
             for (unsigned i = 2; i < word_count; ++i)
                 ispvr_input_advance_data(input);
             SPVREFL_ASSERT(result_id < info->id_upper_bound);
+            info->ids[result_id].type.basic_type = spvrefl_basictype_struct;
             DEBUG_PRINT("- (@%u) OpTypeStruct (%u words): %u, member count=%u\n", info->instruction_count, input->inst_word_count, result_id, word_count - 2);
         } break;
         case 31: {      // OpTypeOpaque
@@ -932,12 +1009,25 @@ spvrefl_reflect (
             DEBUG_PRINT("- (@%u) OpFunction (%u words): %u, %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id, function_control, function_type_id);
         } break;
         case 55: {      // OpFunctionParameter
-            SPVREFL_ASSERT(3 == word_count);
-            uint32_t result_type_id = ispvr_input_advance_data(input);
-            uint32_t result_id = ispvr_input_advance_data(input);
-            SPVREFL_ASSERT(result_type_id < info->id_upper_bound);
-            SPVREFL_ASSERT(result_id < info->id_upper_bound);
-            DEBUG_PRINT("- (@%u) OpFunctionParameter (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id);
+            SPVREFL_ASSERT (3 == word_count);
+            uint32_t result_type_id = ispvr_input_advance_data (input);
+            uint32_t result_id = ispvr_input_advance_data (input);
+            SPVREFL_ASSERT (result_type_id < info->id_upper_bound);
+            SPVREFL_ASSERT (result_id < info->id_upper_bound);
+            DEBUG_PRINT ("- (@%u) OpFunctionParameter (%u words): %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id);
+        } break;
+
+        case 59: {      // OpVariable
+            SPVREFL_ASSERT (4 <= word_count);
+            uint32_t result_type_id = ispvr_input_advance_data (input);
+            uint32_t result_id = ispvr_input_advance_data (input);
+            spvrefl_storageclass_e storage_class = ispvr_input_advance_data (input);
+            bool has_initializer = (word_count > 4);
+            uint32_t initializer_id = (has_initializer ? ispvr_input_advance_data (input) : 0);
+            SPVREFL_ASSERT (result_type_id < info->id_upper_bound);
+            SPVREFL_ASSERT (result_id < info->id_upper_bound);
+            SPVREFL_ASSERT (initializer_id < info->id_upper_bound);
+            DEBUG_PRINT ("- (@%u) OpVariable (%u words): %u, %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id, storage_class, initializer_id);
         } break;
 
         case 7: {       // OpString
@@ -1033,5 +1123,190 @@ spvrefl_get_executionmodel_name (spvrefl_executionmodel_e e) {
     default: return NULL;
     }
 }
+
+char const *
+spvrefl_get_basictype_name (spvrefl_basictype_e e) {
+    switch (e) {
+    case spvrefl_basictype_not_a_type       : return "NotAType";
+    case spvrefl_basictype_struct           : return "Struct";
+    case spvrefl_basictype_void             : return "Void";
+    case spvrefl_basictype_bool             : return "Bool";
+    case spvrefl_basictype_uint             : return "UnsignedInt";
+    case spvrefl_basictype_sint             : return "SignedInt";
+    case spvrefl_basictype_float            : return "Float";
+    //case spvrefl_basictype_image            : return "Image";
+    case spvrefl_basictype_sampler          : return "Sampler";
+    //case spvrefl_basictype_sampled_image    : return "SampledImage";
+    case spvrefl_basictype_pointer          : return "Pointer";
+    default: return NULL;
+    }
+}
+
+char const *
+spvrefl_get_imageformat_name (spvrefl_imageformat_e e) {
+    switch (e) {
+    case spvrefl_imageformat_Unknown        : return "Unknown";
+    case spvrefl_imageformat_Rgba32f        : return "Rgba32f";
+    case spvrefl_imageformat_Rgba16f        : return "Rgba16f";
+    case spvrefl_imageformat_R32f           : return "R32f";
+    case spvrefl_imageformat_Rgba8          : return "Rgba8";
+    case spvrefl_imageformat_Rgba8Snorm     : return "Rgba8Snorm";
+    case spvrefl_imageformat_Rg32f          : return "Rg32f";
+    case spvrefl_imageformat_Rg16f          : return "Rg16f";
+    case spvrefl_imageformat_R11fG11fB10f   : return "R11fG11fB10f";
+    case spvrefl_imageformat_R16f           : return "R16f";
+    case spvrefl_imageformat_Rgba16         : return "Rgba16";
+    case spvrefl_imageformat_Rgb10A2        : return "Rgb10A2";
+    case spvrefl_imageformat_Rg16           : return "Rg16";
+    case spvrefl_imageformat_Rg8            : return "Rg8";
+    case spvrefl_imageformat_R16            : return "R16";
+    case spvrefl_imageformat_R8             : return "R8";
+    case spvrefl_imageformat_Rgba16Snorm    : return "Rgba16Snorm";
+    case spvrefl_imageformat_Rg16Snorm      : return "Rg16Snorm";
+    case spvrefl_imageformat_Rg8Snorm       : return "Rg8Snorm";
+    case spvrefl_imageformat_R16Snorm       : return "R16Snorm";
+    case spvrefl_imageformat_R8Snorm        : return "R8Snorm";
+    case spvrefl_imageformat_Rgba32i        : return "Rgba32i";
+    case spvrefl_imageformat_Rgba16i        : return "Rgba16i";
+    case spvrefl_imageformat_Rgba8i         : return "Rgba8i";
+    case spvrefl_imageformat_R32i           : return "R32i";
+    case spvrefl_imageformat_Rg32i          : return "Rg32i";
+    case spvrefl_imageformat_Rg16i          : return "Rg16i";
+    case spvrefl_imageformat_Rg8i           : return "Rg8i";
+    case spvrefl_imageformat_R16i           : return "R16i";
+    case spvrefl_imageformat_R8i            : return "R8i";
+    case spvrefl_imageformat_Rgba32ui       : return "Rgba32ui";
+    case spvrefl_imageformat_Rgba16ui       : return "Rgba16ui";
+    case spvrefl_imageformat_Rgba8ui        : return "Rgba8ui";
+    case spvrefl_imageformat_R32ui          : return "R32ui";
+    case spvrefl_imageformat_Rgb10a2ui      : return "Rgb10a2ui";
+    case spvrefl_imageformat_Rg32ui         : return "Rg32ui";
+    case spvrefl_imageformat_Rg16ui         : return "Rg16ui";
+    case spvrefl_imageformat_Rg8ui          : return "Rg8ui";
+    case spvrefl_imageformat_R16ui          : return "R16ui";
+    case spvrefl_imageformat_R8ui           : return "R8ui";
+    default: return NULL;
+    }
+}
+
+char const *
+spvrefl_get_imagedimension_name (spvrefl_dim_e e) {
+    switch (e) {
+    case spvrefl_dim_1D             : return "1D";
+    case spvrefl_dim_2D             : return "2D";
+    case spvrefl_dim_3D             : return "3D";
+    case spvrefl_dim_Cube           : return "Cube";
+    case spvrefl_dim_Rect           : return "Rect";
+    case spvrefl_dim_Buffer         : return "Buffer";
+    case spvrefl_dim_SubpassData    : return "SubpassData";
+    default: return NULL;
+    }
+}
+
+char const *
+spvrefl_get_storageclass_name (spvrefl_storageclass_e e) {
+    switch (e) {
+    case spvrefl_storageclass_UniformConstant          : return "UniformConstant";
+    case spvrefl_storageclass_Input                    : return "Input";
+    case spvrefl_storageclass_Uniform                  : return "Uniform";
+    case spvrefl_storageclass_Output                   : return "Output";
+    case spvrefl_storageclass_Workgroup                : return "Workgroup";
+    case spvrefl_storageclass_CrossWorkgroup           : return "CrossWorkgroup";
+    case spvrefl_storageclass_Private                  : return "Private";
+    case spvrefl_storageclass_Function                 : return "Function";
+    case spvrefl_storageclass_Generic                  : return "Generic";
+    case spvrefl_storageclass_PushConstant             : return "PushConstant";
+    case spvrefl_storageclass_AtomicCounter            : return "AtomicCounter";
+    case spvrefl_storageclass_Image                    : return "Image";
+    case spvrefl_storageclass_StorageBuffer            : return "StorageBuffer";
+    case spvrefl_storageclass_CallableDataNV           : return "CallableDataNV";
+    case spvrefl_storageclass_IncomingCallableDataNV   : return "IncomingCallableDataNV";
+    case spvrefl_storageclass_RayPayloadNV             : return "RayPayloadNV";
+    case spvrefl_storageclass_HitAttributeNV           : return "HitAttributeNV";
+    case spvrefl_storageclass_IncomingRayPayloadNV     : return "IncomingRayPayloadNV";
+    case spvrefl_storageclass_ShaderRecordBufferNV     : return "ShaderRecordBufferNV";
+    case spvrefl_storageclass_PhysicalStorageBuffer    : return "PhysicalStorageBuffer";
+    default: return NULL;
+    }
+}
+
+#if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
+static size_t
+ispvr_serialize_basic_type (char * b, size_t st, spvrefl_type_t const * t) {
+    size_t su = 0;
+    su += snprintf(b + su, st - su, "%s", spvrefl_get_basictype_name(t->basic_type));
+    if (t->component_bit_size > 0)
+        su += snprintf(b + su, st - su, "%u", (unsigned)t->component_bit_size);
+    if (t->columns > 1 || t->rows > 1) {
+        su += snprintf(b + su, st - su, "/");
+        if (t->columns > 1)
+            su += snprintf(b + su, st - su, "%ux", (unsigned)t->columns);
+        su += snprintf(b + su, st - su, "%u", (unsigned)t->rows);
+    }
+    if (t->is_array) {
+        if (t->array_elem_count > 0)
+            su += snprintf(b + su, st - su, "[%u]", t->array_elem_count);
+        else
+            su += snprintf(b + su, st - su, "[]");
+    }
+    return su;
+}
+char const *
+spvrefl_generate_type_string (spvrefl_type_t const * t, char * buffer, size_t buffer_size) {
+    char const * ret = NULL;
+    if (t && buffer && buffer_size > 4) {
+        char * b = buffer;
+        size_t st = buffer_size, su = 0;
+
+        if (t->has_storage_class)
+            su += snprintf(b + su, st - su, "%s(", spvrefl_get_storageclass_name(t->storage_class));
+
+        if (t->image_type == spvrefl_imagetype_not_an_image) {
+            su += ispvr_serialize_basic_type(b + su, st - su, t);
+        } else {    // is an image or sampled-image
+            if (t->image_type == spvrefl_imagetype_image)
+                su += snprintf(b + su, st - su, "%s", "Image{");
+            else if (t->image_type == spvrefl_imagetype_sampled_image)
+                su += snprintf(b + su, st - su, "%s", "SampledImage{");
+            else
+                su += snprintf(b + su, st - su, "%s", "Image???{");
+            
+            su += snprintf(b + su, st - su, "%s/%s"
+                , spvrefl_get_imagedimension_name(t->image_dimensions)
+                , spvrefl_get_imageformat_name(t->image_format)
+            );
+            if (t->image_is_array)
+                su += snprintf(b + su, st - su, "/Array");
+            if (t->image_is_multisampled)
+                su += snprintf(b + su, st - su, "/MS");
+            if (t->has_image_access_qualifier)
+                su += snprintf(b + su, st - su, "/%s"
+                    , (t->image_access_qualifier == spvrefl_accessqualifier_ReadOnly ? "Read" :
+                        (t->image_access_qualifier == spvrefl_accessqualifier_WriteOnly ? "Write" :
+                            (t->image_access_qualifier == spvrefl_accessqualifier_ReadWrite ? "RW" :
+                                "??")))
+                );
+            if (t->image_is_depth != spvrefl_imageisdepth_unknown)
+                su += snprintf(b + su, st - su, "/%s"
+                    , (t->image_is_depth == spvrefl_imageisdepth_yes ? "Depth" : "NotDepth")
+                );
+            su += snprintf(b + su, st - su, "/%s"
+                , (t->image_is_sampled == spvrefl_imageissampled_yes ? "Sampled" :
+                    (t->image_is_sampled == spvrefl_imageissampled_no ? "NotSampled" :
+                        (t->image_is_sampled == spvrefl_imageissampled_runtime ? "SampledInRT" :
+                            "?")))
+            );
+            su += snprintf(b + su, st - su, "->");
+            su += snprintf(b + su, st - su, "->");
+            su += ispvr_serialize_basic_type(b + su, st - su, t);
+            su += snprintf(b + su, st - su, "}");
+        }
+
+        if (t->has_storage_class)
+            su += snprintf(b + su, st - su, ")");
+    }
+    return ret;
+}
+#endif  // !SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION
 
 #endif  // SPVREFL_IMPLEMENTATION

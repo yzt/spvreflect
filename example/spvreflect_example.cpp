@@ -789,13 +789,17 @@ void print_result (spvrefl_result_t const & res, spvrefl_info_t const & inf) {
                     }
                     ::printf("]");
                 }
-                if (inf.ids[i].type == spvrefl_idtype_struct) {
+                char type_str [100];
+                if (inf.ids[i].type.basic_type == spvrefl_basictype_struct) {
                     ::printf(" (struct: members: %d/needed: %d)\n", inf.ids[i].struct_members->count, inf.ids[i].struct_members->needed_count);
                     for (int j = 0; j < inf.ids[i].struct_members->count; ++j) {
-                        ::printf("\t\t\t\t - \"%s\"\n", inf.ids[i].struct_members->members[j].name);
+                        ::printf("\t\t\t\t - \"%s\" (%s)\n"
+                            , inf.ids[i].struct_members->members[j].name
+                            , spvrefl_generate_type_string(&inf.ids[i].type, type_str, sizeof(type_str))
+                        );
                     }
                 } else {
-                    ::printf("\n");
+                    ::printf(" (%s)\n", spvrefl_generate_type_string(&inf.ids[i].type, type_str, sizeof(type_str)));
                 }
             }
         ::printf("  *   Source Language: %d (v%u)\n", inf.source_language, inf.source_language_version);

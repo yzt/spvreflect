@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 #pragma region "Compile-Time Options"
+//#define  SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION              // Would require snprintf() from stdio.h
 #if !defined(SPVREFL_OPT_MAX_EXTENSIONS)
     #define  SPVREFL_OPT_MAX_EXTENSIONS                             4
 #endif
@@ -29,9 +30,6 @@ extern "C" {
 #endif
 #if !defined(SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT)
     #define  SPVREFL_OPT_MAX_STRUCT_MEMBER_COUNT                    16
-#endif
-#if !defined(SPVREFL_OPT_MAX_TOTAL_DECORATIONS)
-    #define  SPVREFL_OPT_MAX_TOTAL_DECORATIONS                      128
 #endif
 #if !defined(SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER)
     #define  SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER           8
@@ -169,7 +167,7 @@ typedef enum {
     spvrefl_storageclass_IncomingRayPayloadNV     = 5342,
     spvrefl_storageclass_ShaderRecordBufferNV     = 5343,
     spvrefl_storageclass_PhysicalStorageBuffer    = 5349,
-    spvrefl_storageclass_PhysicalStorageBufferEXT = 5349,
+  //spvrefl_storageclass_PhysicalStorageBufferEXT = 5349,
 } spvrefl_storageclass_e;
 
 typedef enum {
@@ -690,11 +688,43 @@ typedef enum {
     spvrefl_capability__count
 } spvrefl_capability_e;
 
+//typedef enum {
+//    spvrefl_idtype_unknown = 0,
+//    spvrefl_idtype_source_file_name,
+//    spvrefl_idtype_struct,
+//} spvrefl_idtype_e;
+
 typedef enum {
-    spvrefl_idtype_unknown = 0,
-    spvrefl_idtype_source_file_name,
-    spvrefl_idtype_struct,
-} spvrefl_idtype_e;
+    spvrefl_basictype_not_a_type = 0,
+    spvrefl_basictype_struct,
+    spvrefl_basictype_void,
+    spvrefl_basictype_bool,
+    spvrefl_basictype_uint,
+    spvrefl_basictype_sint,
+    spvrefl_basictype_float,
+    //spvrefl_basictype_image,
+    spvrefl_basictype_sampler,
+    //spvrefl_basictype_sampled_image,
+    spvrefl_basictype_pointer,
+} spvrefl_basictype_e;
+
+typedef enum {
+    spvrefl_imagetype_not_an_image  = 0,
+    spvrefl_imagetype_image         = 1,
+    spvrefl_imagetype_sampled_image = 2,
+} spvrefl_imagetype_e;
+
+typedef enum {
+    spvrefl_imageisdepth_no         = 0,
+    spvrefl_imageisdepth_yes        = 1,
+    spvrefl_imageisdepth_unknown    = 2,
+} spvrefl_imageisdepth_e;
+
+typedef enum {
+    spvrefl_imageissampled_runtime  = 0,
+    spvrefl_imageissampled_yes      = 1,
+    spvrefl_imageissampled_no       = 2,
+} spvrefl_imageissampled_e;
 #pragma endregion
 
 #pragma region "Unions"
@@ -730,22 +760,54 @@ typedef union {
     uint32_t user_type;
 } spvrefl_decoration_param1_u;
 
-//typedef union {
-//} spvrefl_decoration_param2_u;
+typedef union {
+    char const * linkage_name;
+} spvrefl_decoration_param2_u;
 #pragma endregion
 
 #pragma region "Structs"
+
+#if defined(_MSC_VER)
+#pragma warning (push)
+#pragma warning (disable: 4214)     // nonstandard extension used: bit field types other than int
+#else
+// TODO: Add for other compilers
+#endif
+typedef struct {
+    uint32_t array_elem_count;      // 0 means not an array, or runtime-sized array; check "is_array"
+    spvrefl_storageclass_e storage_class;
+    spvrefl_basictype_e basic_type;
+    uint8_t component_bit_size;
+
+    uint8_t columns;                        // Scalars have both columns and rows set to 1.
+    uint8_t rows;                           // Vectors have columns set to 1, and rows set to the number of their components.
+                                            // Matrices have both columns and rows set.
+
+    bool is_array                   : 1;
+    bool has_storage_class          : 1;    // This is for all types; not just images.
+    bool image_is_array             : 1;    // This and below are for images and sampled-images only. For an image, the above contain information for the sampled type
+    bool image_is_multisampled      : 1;
+    bool has_image_access_qualifier : 1;
+    spvrefl_imagetype_e image_type                      : 2;
+    spvrefl_dim_e image_dimensions                      : 3;
+    spvrefl_imageisdepth_e image_is_depth               : 2;
+    spvrefl_imageissampled_e image_is_sampled           : 2;
+    spvrefl_imageformat_e image_format                  : 6;
+    spvrefl_accessqualifier_e image_access_qualifier    : 2;
+} spvrefl_type_t;
+static_assert(sizeof(spvrefl_type_t) == 20, "");
+#if defined(_MSC_VER)
+#pragma warning (pop)
+#else
+// TODO: Add for other compilers
+#endif
+
 typedef struct {
     spvrefl_decoration_e decoration;
     spvrefl_decoration_param1_u param1;
     //spvrefl_decoration_param2_u param2;
 } spvrefl_decoration_t;
 
-///typedef struct {
-///    int count;
-///    int needed_count;
-///    int indices [SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER];
-///} spvrefl_decoration_index_set_t;
 typedef struct {
     int count;
     int needed_count;
@@ -755,8 +817,8 @@ typedef struct {
 } spvrefl_decoration_set_t;
 
 typedef struct {
+    spvrefl_type_t type;
     char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
-    ///spvrefl_decoration_index_set_t decorations;
     spvrefl_decoration_set_t decorations;
 } spvrefl_struct_member_t;
 
@@ -768,10 +830,10 @@ typedef struct {
 
 typedef struct {
     uint32_t id;
-    spvrefl_idtype_e type;
+    ///spvrefl_idtype_e type;
+    spvrefl_type_t type;
     char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
     spvrefl_struct_members_t * struct_members; // NULL for non-structs; otherwise will point into scratch memory passed to spvrefl_reflect()
-    ///spvrefl_decoration_index_set_t decorations;
     spvrefl_decoration_set_t decorations;
 } spvrefl_id_data_t;
 
@@ -843,7 +905,7 @@ typedef struct {
     spvrefl_entry_point_set_t entry_points;
     ///spvrefl_decoration_set_t decorations;
 
-    //spvrefl_struct_set_t structs;
+    ///spvrefl_struct_set_t structs;
     int struct_count;
     int struct_needed_count;
 
@@ -885,6 +947,24 @@ spvrefl_get_execmode_name (spvrefl_execmode_e em);
 
 char const *
 spvrefl_get_executionmodel_name (spvrefl_executionmodel_e emodel);
+
+char const *
+spvrefl_get_basictype_name (spvrefl_basictype_e bt);
+
+char const *
+spvrefl_get_imageformat_name (spvrefl_imageformat_e ifmt);
+
+char const *
+spvrefl_get_imagedimension_name (spvrefl_dim_e idim);
+
+char const *
+spvrefl_get_storageclass_name (spvrefl_storageclass_e sc);
+
+#if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
+char const *
+spvrefl_generate_type_string (spvrefl_type_t const * t, char * buffer, size_t buffer_size);  // buffer needs to be ~60 chars
+#endif
+
 #pragma endregion
 
 #if defined(__cplusplus)
