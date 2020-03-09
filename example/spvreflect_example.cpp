@@ -789,17 +789,36 @@ void print_result (spvrefl_result_t const & res, spvrefl_info_t const & inf) {
                     }
                     ::printf("]");
                 }
-                char type_str [100];
-                if (inf.ids[i].type.basic_type == spvrefl_basictype_struct) {
-                    ::printf(" (struct: members: %d/needed: %d)\n", inf.ids[i].struct_members->count, inf.ids[i].struct_members->needed_count);
+                char type_str [512];
+                //if (inf.ids[i].type.category == spvrefl_typecategory_basic && inf.ids[i].type.basic_type == spvrefl_basictype_struct) {
+                if (inf.ids[i].struct_members) {
+                    ::printf(" (struct: members: %d/needed: %d) (%s)\n"
+                        , inf.ids[i].struct_members->count
+                        , inf.ids[i].struct_members->needed_count
+                        , spvrefl_generate_type_string(&inf.ids[i].type, inf.ids[i].struct_members, type_str, sizeof(type_str))
+                    );
                     for (int j = 0; j < inf.ids[i].struct_members->count; ++j) {
-                        ::printf("\t\t\t\t - \"%s\" (%s)\n"
+                        ::printf("\t\t\t\t - \"%s\" (%s)"
                             , inf.ids[i].struct_members->members[j].name
-                            , spvrefl_generate_type_string(&inf.ids[i].type, type_str, sizeof(type_str))
+                            , spvrefl_generate_type_string(&inf.ids[i].struct_members->members[j].type, nullptr, type_str, sizeof(type_str))
                         );
+                        if (inf.ids[i].struct_members->members[j].decorations.needed_count > 0) {
+                            ::printf(" [decorations:%d/needed:%d ->"
+                                , inf.ids[i].struct_members->members[j].decorations.count
+                                , inf.ids[i].struct_members->members[j].decorations.needed_count
+                            );
+                            for (int k = 0; k < inf.ids[i].struct_members->members[j].decorations.count; ++k) {
+                                ::printf(" %s:%u"
+                                    , spvrefl_get_decoration_name(inf.ids[i].struct_members->members[j].decorations.decorations[k])
+                                    , inf.ids[i].struct_members->members[j].decorations.param_ones[k].raw_value_
+                                );
+                            }
+                            ::printf("]");
+                        }
+                        ::printf("\n");
                     }
                 } else {
-                    ::printf(" (%s)\n", spvrefl_generate_type_string(&inf.ids[i].type, type_str, sizeof(type_str)));
+                    ::printf(" (%s)\n", spvrefl_generate_type_string(&inf.ids[i].type, nullptr, type_str, sizeof(type_str)));
                 }
             }
         ::printf("  *   Source Language: %d (v%u)\n", inf.source_language, inf.source_language_version);
@@ -809,29 +828,56 @@ void print_result (spvrefl_result_t const & res, spvrefl_info_t const & inf) {
     ::printf("\n");
 }
 
-int main () {
-    void * scratch = ::malloc(65'536);
-    
-    {
-        spvrefl_info_t info;
-        spvrefl_result_t res = spvrefl_reflect(shader00_frag_spirv, sizeof(shader00_frag_spirv), &info, scratch, 65'536);
-        print_result(res, info);
-    }
-    {
-        spvrefl_info_t info;
-        spvrefl_result_t res = spvrefl_reflect(shader01_frag_spirv, sizeof(shader01_frag_spirv), &info, scratch, 65'536);
-        print_result(res, info);
-    }
-    {
-        spvrefl_info_t info;
-        spvrefl_result_t res = spvrefl_reflect(shader02_vert_spirv, sizeof(shader02_vert_spirv), &info, scratch, 65'536);
-        print_result(res, info);
-    }
-    {
-        spvrefl_info_t info;
-        spvrefl_result_t res = spvrefl_reflect(shader03_frag_spirv, sizeof(shader03_frag_spirv), &info, scratch, 65'536);
-        print_result(res, info);
-    }
+void reflect_and_print (char const * shader_source, unsigned char const * spirv, int spirv_size) {
+    constexpr int ScratchSize = 65'536;
+    void * scratch = ::malloc(ScratchSize);
+    ::printf("/----------------------------------------------------------------\\\n");
+    ::printf("| Shader Source                                                  |\n");
+    ::printf("\\----------------------------------------------------------------/\n");
+    ::printf("%s\n", shader_source);
+    ::printf("/----------------------------------------------------------------\\\n");
+    ::printf("| Reflector Debug Output                                         |\n");
+    ::printf("\\----------------------------------------------------------------/\n");
+    spvrefl_info_t info;
+    spvrefl_result_t res = spvrefl_reflect(spirv, spirv_size, &info, scratch, ScratchSize);
+    ::printf("/----------------------------------------------------------------\\\n");
+    ::printf("| Result                                                         |\n");
+    ::printf("\\----------------------------------------------------------------/\n");
+    print_result(res, info);
+    ::printf("/----------------------------------------------------------------\\\n");
+    ::printf("| End                                                            |\n");
+    ::printf("\\----------------------------------------------------------------/\n");
     ::free(scratch);
+}
+
+int main () {
+
+    reflect_and_print(shader00_frag, shader00_frag_spirv, sizeof(shader00_frag_spirv));
+    reflect_and_print(shader01_frag, shader01_frag_spirv, sizeof(shader01_frag_spirv));
+    reflect_and_print(shader02_vert, shader02_vert_spirv, sizeof(shader02_vert_spirv));
+    reflect_and_print(shader03_frag, shader03_frag_spirv, sizeof(shader03_frag_spirv));
+
+    //void * scratch = ::malloc(65'536);
+    //{
+    //    spvrefl_info_t info;
+    //    spvrefl_result_t res = spvrefl_reflect(shader00_frag_spirv, sizeof(shader00_frag_spirv), &info, scratch, 65'536);
+    //    print_result(res, info);
+    //}
+    //{
+    //    spvrefl_info_t info;
+    //    spvrefl_result_t res = spvrefl_reflect(shader01_frag_spirv, sizeof(shader01_frag_spirv), &info, scratch, 65'536);
+    //    print_result(res, info);
+    //}
+    //{
+    //    spvrefl_info_t info;
+    //    spvrefl_result_t res = spvrefl_reflect(shader02_vert_spirv, sizeof(shader02_vert_spirv), &info, scratch, 65'536);
+    //    print_result(res, info);
+    //}
+    //{
+    //    spvrefl_info_t info;
+    //    spvrefl_result_t res = spvrefl_reflect(shader03_frag_spirv, sizeof(shader03_frag_spirv), &info, scratch, 65'536);
+    //    print_result(res, info);
+    //}
+    //::free(scratch);
     return 0;
 }

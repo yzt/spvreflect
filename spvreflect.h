@@ -725,6 +725,16 @@ typedef enum {
     spvrefl_imageissampled_yes      = 1,
     spvrefl_imageissampled_no       = 2,
 } spvrefl_imageissampled_e;
+
+typedef enum {
+    spvrefl_typecategory_unknown    = 0,
+    spvrefl_typecategory_basic      = 1,
+    spvrefl_typecategory_image      = 2,
+    spvrefl_typecategory_pointer    = 3,
+    spvrefl_typecategory_variable   = 4,
+    spvrefl_typecategory_function   = 5,
+    spvrefl_typecategory_constant   = 6,
+} spvrefl_typecategory_e;
 #pragma endregion
 
 #pragma region "Unions"
@@ -774,26 +784,26 @@ typedef union {
 // TODO: Add for other compilers
 #endif
 typedef struct {
-    uint32_t array_elem_count;      // 0 means not an array, or runtime-sized array; check "is_array"
-    spvrefl_storageclass_e storage_class;
     spvrefl_basictype_e basic_type;
+    spvrefl_storageclass_e storage_class;
+    uint32_t array_elem_count;      // 0 means not an array, or runtime-sized array; check "is_array"
     uint8_t component_bit_size;
 
     uint8_t columns;                        // Scalars have both columns and rows set to 1.
     uint8_t rows;                           // Vectors have columns set to 1, and rows set to the number of their components.
                                             // Matrices have both columns and rows set.
-
     bool is_array                   : 1;
     bool has_storage_class          : 1;    // This is for all types; not just images.
     bool image_is_array             : 1;    // This and below are for images and sampled-images only. For an image, the above contain information for the sampled type
     bool image_is_multisampled      : 1;
     bool has_image_access_qualifier : 1;
-    spvrefl_imagetype_e image_type                      : 2;
-    spvrefl_dim_e image_dimensions                      : 3;
-    spvrefl_imageisdepth_e image_is_depth               : 2;
-    spvrefl_imageissampled_e image_is_sampled           : 2;
-    spvrefl_imageformat_e image_format                  : 6;
-    spvrefl_accessqualifier_e image_access_qualifier    : 2;
+    spvrefl_typecategory_e category                     : 4;    // This one is not specific to images!
+    spvrefl_imagetype_e image_type                      : 3;
+    spvrefl_dim_e image_dimensions                      : 4;
+    spvrefl_imageisdepth_e image_is_depth               : 3;
+    spvrefl_imageissampled_e image_is_sampled           : 3;
+    spvrefl_imageformat_e image_format                  : 7;
+    spvrefl_accessqualifier_e image_access_qualifier    : 3;
 } spvrefl_type_t;
 static_assert(sizeof(spvrefl_type_t) == 20, "");
 #if defined(_MSC_VER)
@@ -835,7 +845,18 @@ typedef struct {
     char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
     spvrefl_struct_members_t * struct_members; // NULL for non-structs; otherwise will point into scratch memory passed to spvrefl_reflect()
     spvrefl_decoration_set_t decorations;
+    union {
+        bool boolean;
+        uint32_t integer;
+        float real;
+        struct {
+            uint8_t addressing_mode;        // Actually a "spvrefl_sampleraddressingmode_e"
+            uint8_t filter_mode;            // Actually a "spvrefl_samplerfiltermode_e"
+            bool is_normalized;
+        } sampler;
+    } constant_value;
 } spvrefl_id_data_t;
+//static_assert(sizeof(spvrefl_id_data_t::constant_value) == 4, "");
 
 typedef struct {
     // NOTE: As of SPIR-V 1.5r2, there are 141 unique capabilities defined,
@@ -962,7 +983,7 @@ spvrefl_get_storageclass_name (spvrefl_storageclass_e sc);
 
 #if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
 char const *
-spvrefl_generate_type_string (spvrefl_type_t const * t, char * buffer, size_t buffer_size);  // buffer needs to be ~60 chars
+spvrefl_generate_type_string (spvrefl_type_t const * type, spvrefl_struct_members_t const * members, char * buffer, size_t buffer_size);  // buffer needs to be ~60 chars
 #endif
 
 #pragma endregion
