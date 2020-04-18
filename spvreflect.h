@@ -34,6 +34,10 @@ extern "C" {
 #if !defined(SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER)
     #define  SPVREFL_OPT_MAX_DECORATIONS_PER_ID_OR_MEMBER           8
 #endif
+
+#if !defined(SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV)
+    #define  SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV                        32
+#endif
 #pragma endregion
 
 #pragma region "Enumerations"
@@ -945,6 +949,73 @@ typedef struct {
     int error_position_byte;
     int scratch_memory_used_bytes;
 } spvrefl_result_t;
+
+
+typedef struct {
+    bool is_output;             // false: input, true: output
+    bool is_array;
+    spvrefl_basictype_e basic;
+    uint8_t component_bit_size;
+    uint8_t columns;
+    uint8_t rows;
+    uint32_t elem_count;
+} spvrefl_extracted_type_t;
+typedef struct {
+    char const * name;
+} spvrefl_extracted_param_t;
+
+typedef struct {
+    char const * name;
+    spvrefl_executionmodel_e stage;
+    int param_count;
+} spvrefl_extracted_entry_point_t;
+
+typedef enum {
+    spvrefl_extracted_blockcategory_INVALID                 = 0,
+    spvrefl_extracted_blockcategory_sampler               ,
+    spvrefl_extracted_blockcategory_combined_image_sampler,
+    spvrefl_extracted_blockcategory_sampled_image         ,
+    spvrefl_extracted_blockcategory_storage_image         ,
+    spvrefl_extracted_blockcategory_uniform_texel_buffer  ,
+    spvrefl_extracted_blockcategory_storage_texel_buffer  ,
+    spvrefl_extracted_blockcategory_uniform_buffer        ,
+    spvrefl_extracted_blockcategory_storage_buffer        ,
+    spvrefl_extracted_blockcategory_uniform_buffer_dynamic,
+    spvrefl_extracted_blockcategory_storage_buffer_dynamic,
+    spvrefl_extracted_blockcategory_input_attachment      ,
+
+    spvrefl_extracted_blockcategory_push_constants        ,
+} spvrefl_extracted_blockcategory_e;
+typedef struct {
+    char const * name;                  // TODO: Make this an array, and contain the name locally. (This points into the scratch memory that user provided to the reflection function right now!!!)
+    char const * type_name;
+    spvrefl_extracted_blockcategory_e category;
+    int descriptor_no;
+    int binding_no;
+    int size;
+    int count;
+    bool is_variable_length;            // If true, means that "size" is actually the mininum size.
+} spvrefl_extracted_block_t;
+typedef struct {
+    struct {
+        int entry_points;
+        int entry_points_needed;
+
+        int total_blocks;
+        int total_blocks_needed;
+
+        //int uniform_buffers;
+        //int samplers;
+        //int images;
+        //int combined_image_samplers;
+        //int storage_images;
+        //int storage_buffers;
+        //int push_constants;             // 0 or 1
+    } counts;
+    
+    spvrefl_extracted_entry_point_t entry_points [SPVREFL_OPT_MAX_ENTRY_POINTS];
+    spvrefl_extracted_block_t blocks [SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV];
+} spvrefl_extracted_shader_info_t;
 #pragma endregion
 
 #pragma region "API"
@@ -955,6 +1026,12 @@ spvrefl_reflect (
     spvrefl_info_t * out_reflection_info,
     void * scratch_memory,
     int scratch_memory_size_bytes
+);
+
+bool
+spvrefl_extract_shader_info (
+    spvrefl_info_t const * reflection_info,
+    spvrefl_extracted_shader_info_t * out_shader_info
 );
 
 char const *
@@ -980,6 +1057,9 @@ spvrefl_get_imagedimension_name (spvrefl_dim_e idim);
 
 char const *
 spvrefl_get_storageclass_name (spvrefl_storageclass_e sc);
+
+char const *
+spvrefl_get_extracted_blockcategory_name (spvrefl_extracted_blockcategory_e ebc);
 
 #if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
 char const *

@@ -1349,6 +1349,156 @@ spvrefl_get_storageclass_name (spvrefl_storageclass_e e) {
     }
 }
 
+char const *
+spvrefl_get_extracted_blockcategory_name (spvrefl_extracted_blockcategory_e e) {
+    switch (e)
+    {
+    case spvrefl_extracted_blockcategory_INVALID                : return "INVALID";
+    case spvrefl_extracted_blockcategory_sampler                : return "Sampler";
+    case spvrefl_extracted_blockcategory_combined_image_sampler : return "CombinedImageSampler";
+    case spvrefl_extracted_blockcategory_sampled_image          : return "Image";
+    case spvrefl_extracted_blockcategory_storage_image          : return "StorageImage";
+    case spvrefl_extracted_blockcategory_uniform_texel_buffer   : return "UniformTexelBuffer";
+    case spvrefl_extracted_blockcategory_storage_texel_buffer   : return "StorageTexelBuffer";
+    case spvrefl_extracted_blockcategory_uniform_buffer         : return "UniformBuffer";
+    case spvrefl_extracted_blockcategory_storage_buffer         : return "StorageBuffer";
+    case spvrefl_extracted_blockcategory_uniform_buffer_dynamic : return "DynamicUniformBuffer";
+    case spvrefl_extracted_blockcategory_storage_buffer_dynamic : return "DynamicStorageBuffer";
+    case spvrefl_extracted_blockcategory_input_attachment       : return "InputAttachment";
+    case spvrefl_extracted_blockcategory_push_constants         : return "PushConstants";
+    default: return NULL;
+    }
+}
+bool
+spvrefl_extract_shader_info (
+    spvrefl_info_t const * in,
+    spvrefl_extracted_shader_info_t * out
+) {
+    bool ret = false;
+
+    if (in && out) {
+        out->counts.entry_points = in->entry_points.count;
+        out->counts.entry_points_needed = in->entry_points.needed_count;
+        for (int i = 0; i < in->entry_points.count; ++i) {
+            out->entry_points[i].name = in->entry_points.functions[i].name;
+            out->entry_points[i].stage = in->entry_points.functions[i].execution_model;
+            out->entry_points[i].param_count = in->entry_points.functions[i].param_count;
+        }
+
+        for (int i = 0; i < in->ids_count; ++i) {
+            spvrefl_type_t const * type = &in->ids[i].type;
+            if (spvrefl_typecategory_variable != type->category)
+                continue;
+            if (!type->has_storage_class)
+                continue;
+
+            spvrefl_extracted_blockcategory_e cat = spvrefl_extracted_blockcategory_INVALID;
+            int size = -1;
+            bool var_len = false;
+            if (spvrefl_storageclass_UniformConstant == type->storage_class) {
+                if (spvrefl_imagetype_not_an_image == type->image_type) {   // not an image!
+                    if (spvrefl_basictype_sampler == type->basic_type) {
+                        cat = spvrefl_extracted_blockcategory_sampler;
+                    } else if (spvrefl_basictype_struct == type->basic_type) {
+                        SPVREFL_ASSERT(false);
+                    } else {
+                        SPVREFL_ASSERT(false);
+                    }
+                } else if (spvrefl_imagetype_image == type->image_type) {
+                    cat = spvrefl_extracted_blockcategory_sampled_image;
+                } else if (spvrefl_imagetype_sampled_image == type->image_type) {
+                    cat = spvrefl_extracted_blockcategory_combined_image_sampler;
+                } else {
+                    SPVREFL_ASSERT(false);
+                }
+            } else if (spvrefl_storageclass_Uniform == type->storage_class) {
+                if (spvrefl_imagetype_not_an_image == type->image_type) {   // not an image!
+                    if (spvrefl_basictype_struct == type->basic_type) {
+                        cat = spvrefl_extracted_blockcategory_uniform_buffer;
+                    } else {
+                        SPVREFL_ASSERT(false);
+                    }
+                } else {
+                    SPVREFL_ASSERT(false);
+                }
+            } else if (spvrefl_storageclass_PushConstant == type->storage_class) {
+                if (spvrefl_imagetype_not_an_image == type->image_type) {   // not an image!
+                    if (spvrefl_basictype_struct == type->basic_type) {
+                        cat = spvrefl_extracted_blockcategory_push_constants;
+                    } else {
+                        SPVREFL_ASSERT(false);
+                    }
+                } else {
+                    SPVREFL_ASSERT(false);
+                }
+            } else if (spvrefl_storageclass_Image == type->storage_class) {
+                SPVREFL_ASSERT(false);
+            } else if (spvrefl_storageclass_StorageBuffer == type->storage_class) {
+                cat = spvrefl_extracted_blockcategory_storage_buffer;
+                var_len = true;
+            } else {
+                continue;
+            }
+
+            char const * name = in->ids[i].name;
+            int count = (type->is_array ? type->array_elem_count : 1);
+            int desc = -1;
+            int bind = -1;
+            for (int d = 0; d < in->ids[i].decorations.count; ++d) {
+                 if (spvrefl_decoration_DescriptorSet == in->ids[i].decorations.decorations[d]) {
+                    desc = in->ids[i].decorations.param_ones[d].descriptor_set;
+                 } else if (spvrefl_decoration_Binding == in->ids[i].decorations.decorations[d]) {
+                    bind = in->ids[i].decorations.param_ones[d].binding_point;
+                 }
+            }
+            SPVREFL_ASSERT(cat == spvrefl_extracted_blockcategory_push_constants || (desc >= 0 && bind >= 0));
+
+            if (spvrefl_extracted_blockcategory_INVALID != cat) {
+                int idx = out->counts.total_blocks_needed++;
+                if (idx < SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV) {
+                    out->counts.total_blocks += 1;
+                    spvrefl_extracted_block_t * block = &out->blocks[idx];
+                    block->name = name;
+                    block->category = cat;
+                    block->descriptor_no = desc;
+                    block->binding_no = bind;
+                    block->size = size;
+                    block->count = count;
+                    block->is_variable_length = var_len;
+                }
+            } else {
+                SPVREFL_ASSERT(false);
+            }
+        }
+
+        // Now sort the blocks...
+        bool swapped_something = true;
+        for (int n = out->counts.total_blocks - 1; n > 0 && swapped_something; --n) {
+            swapped_something = false;
+            for (int j = 0; j < n; ++j) {
+                if (
+                    out->blocks[j].descriptor_no > out->blocks[j + 1].descriptor_no ||
+                    (
+                        out->blocks[j].descriptor_no == out->blocks[j + 1].descriptor_no &&
+                        out->blocks[j].binding_no > out->blocks[j + 1].binding_no
+                    )
+                ) {
+                    spvrefl_extracted_block_t temp = out->blocks[j];
+                    out->blocks[j] = out->blocks[j + 1];
+                    out->blocks[j + 1] = temp;
+
+                    swapped_something = true;
+                }
+            }
+        }
+
+        ret = true;
+    }
+    
+
+    return ret;
+}
+
 #if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
 static size_t
 ispvr_serialize_basic_type (char * b, size_t st, spvrefl_type_t const * t) {
