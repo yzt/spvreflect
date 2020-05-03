@@ -1,5 +1,25 @@
 #define SPVREFL_IMPLEMENTATION
 #if defined(SPVREFL_IMPLEMENTATION)
+
+/* WARNING: Extreme Kludge! */
+#if defined(YUGEN_SHARED)
+    #if defined(_WIN32)
+        #if defined(YUGEN_BUILDING_SHARED_ENGINE)
+            #define YUGEN_ENGINE_API    _declspec(dllexport)
+        #else
+            #define YUGEN_ENGINE_API    _declspec(dllimport)
+        #endif
+    #else
+        #define YUGEN_ENGINE_API        /**/
+    #endif
+#elif defined(YUGEN_STATIC)
+    #define YUGEN_ENGINE_API            /**/
+#else
+    #define YUGEN_ENGINE_API            /**/
+#endif
+#define SPVREFL_API         YUGEN_ENGINE_API
+/* END OF KLUDGE */
+
 #include "spvreflect.h"
 
 #if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
@@ -13,6 +33,8 @@
 
 #include <assert.h>
 #define SPVREFL_ASSERT(cond)    assert(cond)
+
+#define SPVREFL_CONSUME_VAR(v_) (void)(v_)
 
 typedef struct {
     uint32_t code;
@@ -1057,6 +1079,7 @@ spvrefl_reflect (
             info->ids[result_id].type.category = spvrefl_typecategory_constant;
             info->ids[result_id].type.basic_type = spvrefl_basictype_bool;
             info->ids[result_id].constant_value.boolean = true;
+            SPVREFL_CONSUME_VAR(result_type_id);
         } break;
         case 42: {      // OpConstantFalse
             SPVREFL_ASSERT(3 == word_count);
@@ -1068,6 +1091,7 @@ spvrefl_reflect (
             info->ids[result_id].type.category = spvrefl_typecategory_constant;
             info->ids[result_id].type.basic_type = spvrefl_basictype_bool;
             info->ids[result_id].constant_value.boolean = false;
+            SPVREFL_CONSUME_VAR(result_type_id);
         } break;
         case 43: {      // OpConstant
             SPVREFL_ASSERT(4 <= word_count);
@@ -1098,6 +1122,7 @@ spvrefl_reflect (
             info->ids[result_id].constant_value.sampler.addressing_mode = addr_mode;
             info->ids[result_id].constant_value.sampler.filter_mode = filter_mode;
             info->ids[result_id].constant_value.sampler.is_normalized = is_normalized;
+            SPVREFL_CONSUME_VAR(result_type_id);
         } break;
         case 46: {      // OpConstantNull
             SPVREFL_ASSERT(3 == word_count);
@@ -1108,6 +1133,7 @@ spvrefl_reflect (
             info->ids[result_id].id = result_id;
             info->ids[result_id].type.category = spvrefl_typecategory_constant;
             info->ids[result_id].type.basic_type = spvrefl_basictype_void;
+            SPVREFL_CONSUME_VAR(result_type_id);
         } break;
 
         case 54: {      // OpFunction
@@ -1148,7 +1174,7 @@ spvrefl_reflect (
             info->ids[result_id].type.category = spvrefl_typecategory_variable;
             info->ids[result_id].type.storage_class = storage_class;
             info->ids[result_id].type.has_storage_class = true;
-            //DEBUG_PRINT ("- (@%u) OpVariable (%u words): %u, %u, %u, %u\n", info->instruction_count, input->inst_word_count, result_type_id, result_id, storage_class, initializer_id);
+            SPVREFL_CONSUME_VAR(result_type_id);
         } break;
 
 

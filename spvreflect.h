@@ -8,6 +8,10 @@
 extern "C" {
 #endif
 
+#if !defined(SPVREFL_API)
+    #define SPVREFL_API
+#endif
+
 #pragma region "Compile-Time Options"
 //#define  SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION              // Would require snprintf() from stdio.h
 #if !defined(SPVREFL_OPT_MAX_EXTENSIONS)
@@ -1023,7 +1027,7 @@ typedef struct {
 #pragma endregion
 
 #pragma region "API"
-spvrefl_result_t
+SPVREFL_API spvrefl_result_t
 spvrefl_reflect (
     void const * input_spirv,
     int input_size_bytes,
@@ -1032,41 +1036,41 @@ spvrefl_reflect (
     int scratch_memory_size_bytes
 );
 
-bool
+SPVREFL_API bool
 spvrefl_extract_shader_info (
     spvrefl_info_t const * reflection_info,
     spvrefl_extracted_shader_info_t * out_shader_info
 );
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_capability_name (spvrefl_capability_e cap);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_decoration_name (spvrefl_decoration_e dec);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_execmode_name (spvrefl_execmode_e em);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_executionmodel_name (spvrefl_executionmodel_e emodel);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_basictype_name (spvrefl_basictype_e bt);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_imageformat_name (spvrefl_imageformat_e ifmt);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_imagedimension_name (spvrefl_dim_e idim);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_storageclass_name (spvrefl_storageclass_e sc);
 
-char const *
+SPVREFL_API char const *
 spvrefl_get_extracted_blockcategory_name (spvrefl_extracted_blockcategory_e ebc);
 
 #if !defined(SPVREFL_OPT_DONT_SUPPORT_TYPE_STRINGIFICATION)
-char const *
+SPVREFL_API char const *
 spvrefl_generate_type_string (spvrefl_type_t const * type, spvrefl_struct_members_t const * members, char * buffer, size_t buffer_size);  // buffer needs to be ~60 chars
 #endif
 
