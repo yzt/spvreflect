@@ -847,7 +847,7 @@ typedef struct {
 
 typedef struct {
     uint32_t id;
-    ///spvrefl_idtype_e type;
+    uint32_t type_id;   // Only valid if this is a variable or something that "has" a type.
     spvrefl_type_t type;
     char const * name;  // Will point into scratch memory passed to spvrefl_reflect()
     spvrefl_struct_members_t * struct_members; // NULL for non-structs; otherwise will point into scratch memory passed to spvrefl_reflect()

@@ -590,6 +590,7 @@ spvrefl_reflect (
     scratch_left -= info->id_upper_bound * sizeof(spvrefl_id_data_t);
     for (int i = 0; i < info->ids_count; ++i) {
         info->ids[i].id = ~0U;
+        info->ids[i].type_id = ~0U;
         info->ids[i].name = NULL;
     }
 
@@ -1028,6 +1029,7 @@ spvrefl_reflect (
             SPVREFL_ASSERT(type_id < info->id_upper_bound);
             SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[type_id].type.basic_type);
             info->ids[result_id].id = result_id;
+            info->ids[result_id].type_id = type_id;
             info->ids[result_id].type = info->ids[type_id].type;    // Copy the basic data for the pointed-to type
             info->ids[result_id].type.category = spvrefl_typecategory_pointer;
             info->ids[result_id].type.storage_class = storage_class;
@@ -1141,6 +1143,7 @@ spvrefl_reflect (
             SPVREFL_ASSERT(spvrefl_basictype_not_a_type == info->ids[result_id].type.basic_type);
             SPVREFL_ASSERT(spvrefl_basictype_not_a_type != info->ids[result_type_id].type.basic_type);
             info->ids[result_id].id = result_id;
+            info->ids[result_id].type_id = result_type_id;
             info->ids[result_id].type = info->ids[result_type_id].type; // Copy the basic data for the pointed-to type
             info->ids[result_id].type.category = spvrefl_typecategory_variable;
             info->ids[result_id].type.storage_class = storage_class;
@@ -1475,6 +1478,10 @@ spvrefl_extract_shader_info (
             }
 
             char const * name = in->ids[i].name;
+            uint32_t type_id = in->ids[i].type_id;
+            while (type_id != ~0U && !in->ids[type_id].name)
+                type_id = in->ids[type_id].type_id;
+            char const * type_name = (type_id != ~0U ? in->ids[type_id].name : NULL);
             int count = (type->is_array ? type->array_elem_count : 1);
             int desc = -1;
             int bind = -1;
@@ -1494,6 +1501,9 @@ spvrefl_extract_shader_info (
                     spvrefl_extracted_block_t * block = &out->blocks[idx];
                     ispvr_strcopy_and_update_max_string_length(
                         out, block->name, name
+                    );
+                    ispvr_strcopy_and_update_max_string_length(
+                        out, block->type_name, type_name
                     );
                     block->category = cat;
                     block->descriptor_no = desc;
