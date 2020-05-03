@@ -1182,6 +1182,7 @@ void print_result (spvrefl_result_t const & res, spvrefl_info_t const & inf) {
 
 void print_shader_info(spvrefl_extracted_shader_info_t const & inf) {
     ::printf("Shader Data/Info Extraction Result:\n");
+    ::printf(" * Max string length (excluding the NUL): %d\n", inf.max_string_length);
     ::printf(" * Entry-point Count: %d (needed: %d)\n", inf.counts.entry_points, inf.counts.entry_points_needed);
     for (int i = 0; i < inf.counts.entry_points; ++i) {
         auto const & ep = inf.entry_points[i];
@@ -1191,7 +1192,7 @@ void print_shader_info(spvrefl_extracted_shader_info_t const & inf) {
     ::printf(" * Block Count: %d (needed: %d)\n", inf.counts.total_blocks, inf.counts.total_blocks_needed);
     for (int i = 0; i < inf.counts.total_blocks; ++i) {
         auto const & b = inf.blocks[i];
-        ::printf("    - #%d, category: %-20s, descriptor set: %-2d, binding: %-2d, size: %-2d, count: %-2d, variable length: %s, \"%s\"\n"
+        ::printf("    - #%d, category: %-20s, descriptor set: %-2d, binding: %-2d, size: %-2d, count: %-2d, variable length: %s, name/type: \"%s\"/\"%s\"\n"
             , i
             , spvrefl_get_extracted_blockcategory_name(b.category)
             , b.descriptor_no
@@ -1200,6 +1201,7 @@ void print_shader_info(spvrefl_extracted_shader_info_t const & inf) {
             , b.count
             , b.is_variable_length ? "yes" : "no "
             , b.name
+            , b.type_name
         );
     }
 }

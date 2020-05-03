@@ -38,6 +38,9 @@ extern "C" {
 #if !defined(SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV)
     #define  SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV                        32
 #endif
+#if !defined(SPVREFL_OPT_MAX_SHADER_NAME_LEN)
+    #define SPVREFL_MAX_EXTRACTED_STRING_LEN                             32
+#endif
 #pragma endregion
 
 #pragma region "Enumerations"
@@ -965,7 +968,7 @@ typedef struct {
 } spvrefl_extracted_param_t;
 
 typedef struct {
-    char const * name;
+    char name [SPVREFL_MAX_EXTRACTED_STRING_LEN + 1];
     spvrefl_executionmodel_e stage;
     int param_count;
 } spvrefl_extracted_entry_point_t;
@@ -987,8 +990,8 @@ typedef enum {
     spvrefl_extracted_blockcategory_push_constants        ,
 } spvrefl_extracted_blockcategory_e;
 typedef struct {
-    char const * name;                  // TODO: Make this an array, and contain the name locally. (This points into the scratch memory that user provided to the reflection function right now!!!)
-    char const * type_name;
+    char name [SPVREFL_MAX_EXTRACTED_STRING_LEN + 1];
+    char type_name [SPVREFL_MAX_EXTRACTED_STRING_LEN + 1];
     spvrefl_extracted_blockcategory_e category;
     int descriptor_no;
     int binding_no;
@@ -1015,6 +1018,7 @@ typedef struct {
     
     spvrefl_extracted_entry_point_t entry_points [SPVREFL_OPT_MAX_ENTRY_POINTS];
     spvrefl_extracted_block_t blocks [SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV];
+    int max_string_length;
 } spvrefl_extracted_shader_info_t;
 #pragma endregion
 

@@ -1369,6 +1369,36 @@ spvrefl_get_extracted_blockcategory_name (spvrefl_extracted_blockcategory_e e) {
     default: return NULL;
     }
 }
+static int
+ispvr_strlen (char const * str) {
+    int ret = 0;
+    if (str) {
+        while (*str++)
+            ret += 1;
+    }
+    return ret;
+}
+static void
+ispvr_strcopy (char * dst, int dst_size, char const * src) {
+    if (dst && src && dst_size > 0) {
+        int i = 0;
+        while (i < dst_size - 1 && src[i]) {
+            dst[i] = src[i];
+            i += 1;
+        }
+        dst[i] = '\0';
+    }
+}
+static void
+ispvr_strcopy_and_update_max_string_length (
+    spvrefl_extracted_shader_info_t * esi,
+    char * dst, char const * src
+) {
+    int len = ispvr_strlen(src);
+    if (esi->max_string_length < len)
+        esi->max_string_length = len;
+    ispvr_strcopy(dst, SPVREFL_MAX_EXTRACTED_STRING_LEN + 1, src);
+}
 bool
 spvrefl_extract_shader_info (
     spvrefl_info_t const * in,
@@ -1380,7 +1410,11 @@ spvrefl_extract_shader_info (
         out->counts.entry_points = in->entry_points.count;
         out->counts.entry_points_needed = in->entry_points.needed_count;
         for (int i = 0; i < in->entry_points.count; ++i) {
-            out->entry_points[i].name = in->entry_points.functions[i].name;
+            ispvr_strcopy_and_update_max_string_length(
+                out,
+                out->entry_points[i].name,
+                in->entry_points.functions[i].name
+            );
             out->entry_points[i].stage = in->entry_points.functions[i].execution_model;
             out->entry_points[i].param_count = in->entry_points.functions[i].param_count;
         }
@@ -1458,7 +1492,9 @@ spvrefl_extract_shader_info (
                 if (idx < SPVREFL_OPT_MAX_BLOCKS_IN_SPIRV) {
                     out->counts.total_blocks += 1;
                     spvrefl_extracted_block_t * block = &out->blocks[idx];
-                    block->name = name;
+                    ispvr_strcopy_and_update_max_string_length(
+                        out, block->name, name
+                    );
                     block->category = cat;
                     block->descriptor_no = desc;
                     block->binding_no = bind;
